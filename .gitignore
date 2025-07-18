@@ -1,0 +1,15 @@
+config/api_keys.yaml
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+*.log
+.pytest_cache/
+.coverage
+poetry.lock
+.vscode/settings.json

@@ -1,0 +1,44 @@
+[tool.poetry]
+name = "SeldonFlow"
+version = "0.1.0"
+description = "Trading platform for prediction markets"
+authors = ["Martyn Jepson martyn@jepson.dev"]
+readme = "README.md"
+packages = [{include = "seldonflow", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+kalshi-python = "^1.0.0"  # Kalshi SDK
+pyyaml = "^6.0"           
+apscheduler = "^3.10"     
+pandas = "^2.2"           
+pytest = "^8.3"           
+python-dotenv = "^1.0" 
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.8"  # Add Black as a dev dependency
+
+[tool.poetry.scripts]
+run = "seldonflow.scripts.run:main"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
