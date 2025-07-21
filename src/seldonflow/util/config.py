@@ -34,6 +34,9 @@ class Config:
     def api_keys(self):
         return self._configs.get(ConfigType.API_KEYS, {})
 
+    def get_api_key(self, service: str):
+        return self.api_keys().get(service, "{}")
+
 
 def main():
     print(f"{CONFIG_PATH / API_KEYS_FILENAME}")
