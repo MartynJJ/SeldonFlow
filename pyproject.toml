@@ -9,6 +9,7 @@ packages = [{include = "seldonflow", from = "src"}]
 [tool.poetry.dependencies]
 python = "^3.10"
 kalshi-python = "^1.0.0"  # Kalshi SDK
+kalshi-python-unofficial = "^0.0.1"
 pyyaml = "^6.0"           
 apscheduler = "^3.10"     
 pandas = "^2.2"           
@@ -17,6 +18,11 @@ python-dotenv = "^1.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.8"  # Add Black as a dev dependency
+ipykernel = "^6.29.5"
+ipython = "^8.27"
+jupyter = "^1.1"
+nbqa = "^1.9"
+pytest-asyncio = "^0.24"  # Add for async testing
 
 [tool.poetry.scripts]
 run = "seldonflow.scripts.run:main"

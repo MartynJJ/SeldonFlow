@@ -13,3 +13,5 @@ venv/
 .coverage
 poetry.lock
 .vscode/settings.json
+config/kalshi_key.pem
+scratch/**
