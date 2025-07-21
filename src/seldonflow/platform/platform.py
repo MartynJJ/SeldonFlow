@@ -1,6 +1,7 @@
 from seldonflow.util.config import Config
 from seldonflow.api_client.kalshi_client import KalshiClient
-
+from seldonflow.api_client.api_client import iApiClient
+from seldonflow.risk.risk_manager import RiskManager
 import asyncio
 from datetime import datetime
 
@@ -9,13 +10,20 @@ class LivePlatform:
     _config: Config
     _tick_length_seconds: int = 1
     _enabled: bool = False
+    _api_client: iApiClient
+    _risk_manager: RiskManager
 
     def __init__(self):
         self._config = Config()
-        self.api_client = KalshiClient(config=self._config)
+        self._api_client = KalshiClient(config=self._config)
+        self._risk_manager = RiskManager(self.api_client())
+
+    def api_client(self) -> iApiClient:
+        return self._api_client
 
     async def on_tick(self, current_time: int):
         print(f"Current Time {current_time}")
+        self._risk_manager.on_tick()
         return
 
     async def run(self):
