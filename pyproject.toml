@@ -23,6 +23,7 @@ ipython = "^8.27"
 jupyter = "^1.1"
 nbqa = "^1.9"
 pytest-asyncio = "^0.24"  # Add for async testing
+selenium = "^4.3" # for data scraping in development
 
 [tool.poetry.scripts]
 run = "seldonflow.scripts.run:main"
