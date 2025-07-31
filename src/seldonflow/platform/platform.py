@@ -2,8 +2,10 @@ from seldonflow.util.config import Config
 from seldonflow.api_client.kalshi_client import KalshiClient
 from seldonflow.api_client.api_client import iApiClient
 from seldonflow.risk.risk_manager import RiskManager
+from seldonflow.execution.execution_manager import ExecutionManager
+
 import asyncio
-from datetime import datetime
+from datetime import datetime, date
 
 
 class LivePlatform:
@@ -12,11 +14,13 @@ class LivePlatform:
     _enabled: bool = False
     _api_client: iApiClient
     _risk_manager: RiskManager
+    _execution_manager: ExecutionManager
 
     def __init__(self):
         self._config = Config()
         self._api_client = KalshiClient(config=self._config)
         self._risk_manager = RiskManager(self.api_client())
+        self._execution_manager = ExecutionManager(self.api_client())
 
     def api_client(self) -> iApiClient:
         return self._api_client

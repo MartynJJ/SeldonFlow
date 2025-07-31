@@ -32,4 +32,9 @@ class KalshiClient(iApiClient):
         return {"USD": balance["balance"] / 100}
 
     def get_positions(self) -> dict:
-        return self.api.portfolio.GetPositions()
+        positions_raw = self.api.portfolio.GetPositions()
+        return self.format_kalshi_positions(positions_raw=positions_raw)
+
+    def format_kalshi_positions(self, positions_raw: dict):
+        positions = positions_raw.get("market_positions", [])
+        return positions
