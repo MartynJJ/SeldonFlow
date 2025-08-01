@@ -5,7 +5,7 @@ from enum import Enum
 import math
 
 
-class TempLocation:
+class TempLocation(Enum):
     INVALID = "INVALID"
     NYC = "NYC"
 

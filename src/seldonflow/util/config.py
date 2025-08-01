@@ -8,11 +8,12 @@ API_KEYS_FILENAME = "api_keys.yaml"
 
 class ConfigType(Enum):
     Invalid = 0
-    API_KEYS = 1
+    Api_Keys = 1
+    Strategy = 2
 
 
 class Config:
-    def __init__(self, types: list[ConfigType] = [ConfigType.API_KEYS]):
+    def __init__(self, types: list[ConfigType] = [ConfigType.Api_Keys]):
         self._types = types
         self._configs = {}
         self.load_configs()
@@ -22,17 +23,17 @@ class Config:
             self.load_config(config_type)
 
     def load_config(self, config_type: ConfigType):
-        if config_type == ConfigType.API_KEYS:
+        if config_type == ConfigType.Api_Keys:
             self.load_api_keys()
         else:
             return
 
     def load_api_keys(self, config_file_path=CONFIG_PATH / API_KEYS_FILENAME):
         with open(config_file_path, "r") as file:
-            self._configs[ConfigType.API_KEYS] = yaml.safe_load(file)
+            self._configs[ConfigType.Api_Keys] = yaml.safe_load(file)
 
     def api_keys(self):
-        return self._configs.get(ConfigType.API_KEYS, {})
+        return self._configs.get(ConfigType.Api_Keys, {})
 
     def get_api_key(self, service: str):
         return self.api_keys().get(service, "{}")

@@ -4,11 +4,18 @@ from seldonflow.strategy.i_strategy import (
     StrategyType,
     ActionRequest,
 )
-from seldonflow.util.types import TimeStamp
+from seldonflow.util.custom_types import TimeStamp, Temp, TempF
+
+from typing import NamedTuple
 
 
-def run_temp_prediction_model():
-    return 100, 0
+class TemperaturePrediction(NamedTuple):
+    temperature: Temp
+    confidence: float
+
+
+def run_temp_prediction_model() -> TemperaturePrediction:
+    return TemperaturePrediction(Temp.from_f(TempF(97.0)), 0.0)
 
 
 class StartOfDayTempPredict(iStrategy):

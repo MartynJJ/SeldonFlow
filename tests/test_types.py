@@ -1,6 +1,5 @@
 import pytest
-from typing import NewType
-from seldonflow.util.types import Temp, TempC, TempF
+from seldonflow.util.custom_types import Temp, TempC, TempF
 
 
 @pytest.fixture
