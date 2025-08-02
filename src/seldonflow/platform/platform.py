@@ -3,24 +3,28 @@ from seldonflow.api_client.kalshi_client import KalshiClient
 from seldonflow.api_client.api_client import iApiClient
 from seldonflow.risk.risk_manager import RiskManager
 from seldonflow.execution.execution_manager import ExecutionManager
+from seldonflow.strategy.strategy_manager import StrategyManager
+from seldonflow.platform.i_platform import iPlatform
 
 import asyncio
 from datetime import datetime, date
 
 
-class LivePlatform:
+class LivePlatform(iPlatform):
     _config: Config
     _tick_length_seconds: int = 1
     _enabled: bool = False
     _api_client: iApiClient
     _risk_manager: RiskManager
     _execution_manager: ExecutionManager
+    _strategy_manager: StrategyManager
 
     def __init__(self):
         self._config = Config()
         self._api_client = KalshiClient(config=self._config)
         self._risk_manager = RiskManager(self.api_client())
         self._execution_manager = ExecutionManager(self.api_client())
+        self._strategy_manager = StrategyManager(self, self._config)
 
     def api_client(self) -> iApiClient:
         return self._api_client
@@ -47,3 +51,12 @@ class LivePlatform:
         except KeyboardInterrupt:
             print("Stopped by user")
             self._enabled = False
+
+
+def main():
+    platform = LivePlatform()
+    print(f"{platform._strategy_manager._strategy_params}")
+
+
+if __name__ == "__main__":
+    main()

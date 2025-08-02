@@ -1,13 +1,8 @@
 from seldonflow.util.custom_types import TimeStamp, Seconds
+from seldonflow.util.config import Config, ConfigType
+from seldonflow.strategy.strategy_types import StrategyType
 
 from abc import ABC, abstractmethod
-from enum import Enum
-
-
-class StrategyType(Enum):
-    Invalid = 0
-    StartOfDayTempPredict = 1
-    TemperatureRestingOrderSweep = 2
 
 
 class ActionRequest:
@@ -19,21 +14,31 @@ class ActionRequest:
         return ActionRequest([])
 
 
-class StrategyParams(ABC):
+class StrategyParams:
     _strategy_type: StrategyType
     _desc: str
+    _name: str
     _tick_interval: Seconds
+    _live: bool
 
-    def __init__(self, params_dict: dict):
+    def __init__(self, name: str, params_dict: dict):
+        self._name = name
         self._strategy_type = params_dict.get("strategy_type", StrategyType.Invalid)
         self._desc = params_dict.get("desc", "")
         self._tick_interval = params_dict.get("tick_interval", Seconds(0))
+        self._live = params_dict.get("live", False)
 
     def strategy_type(self):
         return self._strategy_type
 
     def tick_interval(self):
         return self._tick_interval
+
+    def name(self):
+        return self._name
+
+    def __repr__(self):
+        return f"StrategyParams(name={self._name}, type={self._strategy_type}, desc={self._desc}, tick_interval={self._tick_interval}, live={self._live})"
 
 
 class iStrategy(ABC):
@@ -50,3 +55,26 @@ class iStrategy(ABC):
     @abstractmethod
     def on_tick(self, time_stamp: TimeStamp) -> ActionRequest:
         pass
+
+
+class InvalidStrategy(iStrategy):
+    def __init__(self, params: StrategyParams):
+        super().__init__(params)
+
+    def on_tick(self, time_stamp: TimeStamp) -> ActionRequest:
+        return ActionRequest.no_action()
+
+    @staticmethod
+    def create():
+        return InvalidStrategy(StrategyParams("Invalid", {}))
+
+
+def main():
+    config = Config()
+    for name, param_dict in config.strategies().items():
+        strategy_param = StrategyParams(name, param_dict)
+        print(strategy_param)
+
+
+if __name__ == "__main__":
+    main()

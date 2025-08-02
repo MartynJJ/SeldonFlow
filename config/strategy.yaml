@@ -1,0 +1,10 @@
+temperature_rest_order_sweep1:
+  strategy_type: TemperatureRestingOrderSweep
+  live: false
+  desc: "Pick off resting orders that out below current temp"
+  tick_interval: 60
+  parameters:
+    - name: "MaxSize"
+      type: "dollar"
+      value: 20
+      FromSymbol: "USD"
