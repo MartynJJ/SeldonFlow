@@ -8,3 +8,5 @@ temperature_rest_order_sweep1:
       type: "dollar"
       value: 20
       FromSymbol: "USD"
+    - name: "Market"
+      location: "NYC" 

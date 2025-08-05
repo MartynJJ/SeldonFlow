@@ -31,6 +31,34 @@ class Temp:
     def __str__(self) -> str:
         return f"Temperature: {self._celsius}°C / {self._fahrenheit}°F"
 
+    def __repr__(self) -> str:
+        return f"Temperature: {self._celsius}°C / {self._fahrenheit}°F"
+
+    def __eq__(self, other):
+        if isinstance(other, Temp):
+            return self._celsius == other._celsius
+        return False
+
+    def __lt__(self, other):
+        if isinstance(other, Temp):
+            return self._celsius < other._celsius
+        return NotImplemented
+
+    def __le__(self, other):
+        if isinstance(other, Temp):
+            return self._celsius <= other._celsius
+        return NotImplemented
+
+    def __gt__(self, other):
+        if isinstance(other, Temp):
+            return self._celsius > other._celsius
+        return NotImplemented
+
+    def __ge__(self, other):
+        if isinstance(other, Temp):
+            return self._celsius >= other._celsius
+        return NotImplemented
+
 
 def main():
     time_stamp = TimeStamp(100.1)
