@@ -71,7 +71,7 @@ class KalshiSubClient:
             "KALSHI-ACCESS-TIMESTAMP": timestamp_str,
         }
 
-    def _request_get(self, api_endpoint: KalshiEndPoint):
+    def request_get(self, api_endpoint: KalshiEndPoint):
         headers = self._generate_headers(
             api_method=ApiMethod.Get, kalshi_end_point=api_endpoint
         )
@@ -117,6 +117,9 @@ class KalshiClient(iApiClient):
         super().__init__(config)
         self.public_key_id = self._api_keys["public_key_id"]
         self.private_key_path = self._api_keys["private_key_path"]
+        self._sub_client = KalshiSubClient(
+            self.public_key_id, Path(self.private_key_path)
+        )
 
         kalshi.auth.set_key(
             access_key=self.public_key_id,
