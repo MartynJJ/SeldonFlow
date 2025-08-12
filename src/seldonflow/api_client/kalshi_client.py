@@ -18,11 +18,14 @@ from cryptography.exceptions import InvalidSignature
 from pathlib import Path
 from enum import Enum
 import requests
+from typing import Optional, Literal
+import time
 
 
 class KalshiEndPoint(Enum):
     Invalid = ""
     Balance = "/trade-api/v2/portfolio/balance"
+    Orders = "/trade-api/v2/portfolio/orders"
 
 
 class KalshiSubClient:
@@ -77,6 +80,19 @@ class KalshiSubClient:
         )
         return requests.get(self._base_url + api_endpoint.value, headers=headers)
 
+    def get(self, api_endpoint: KalshiEndPoint):
+        return self.request_get(api_endpoint=api_endpoint).json()
+
+    def request_post(self, api_endpoint: KalshiEndPoint, data: dict):
+        headers = self._generate_headers(
+            api_method=ApiMethod.Post, kalshi_end_point=api_endpoint
+        )
+        headers["Content-Type"] = "application/json"
+
+        return requests.post(
+            self._base_url + api_endpoint.value, json=data, headers=headers
+        )
+
     @staticmethod
     def load_private_key_from_file(file_path: Path) -> types.PrivateKeyTypes:
         if not file_path.is_file():
@@ -110,6 +126,73 @@ class KalshiSubClient:
             return base64.b64encode(signature).decode("utf-8")
         except InvalidSignature as e:
             raise ValueError("RSA sign PSS failed") from e
+
+    @staticmethod
+    def create_order(
+        ticker: str,
+        client_order_id: str,
+        side: Literal["yes", "no"],
+        action: Literal["buy", "sell"],
+        count: int,
+        type: Literal["market", "limit"] = "market",
+        yes_price: Optional[int] = None,
+        no_price: Optional[int] = None,
+        time_in_force: Optional[Literal["ioc", "fok", "gtc", "gtd"]] = None,
+        expiration_ts: Optional[int] = None,
+        sell_position_floor: Optional[int] = None,
+        buy_max_cost: Optional[int] = None,
+        close_cancel_count: Optional[int] = None,
+        source: Optional[str] = None,
+        auto_expiration_hours: Optional[int] = None,
+    ) -> dict:
+        if type == "limit" and not (yes_price or no_price):
+            raise ValueError("Limit orders require either yes_price or no_price")
+
+        if side == "yes" and no_price:
+            raise ValueError("Cannot set no_price when side is 'yes'")
+
+        if side == "no" and yes_price:
+            raise ValueError("Cannot set yes_price when side is 'no'")
+
+        if time_in_force == "gtd" and not expiration_ts and not auto_expiration_hours:
+            raise ValueError(
+                "GTD orders require expiration_ts or auto_expiration_hours"
+            )
+
+        if yes_price and (yes_price < 1 or yes_price > 99):
+            raise ValueError("yes_price must be between 1 and 99 cents")
+
+        if no_price and (no_price < 1 or no_price > 99):
+            raise ValueError("no_price must be between 1 and 99 cents")
+
+        if auto_expiration_hours and not expiration_ts:
+            expiration_ts = int(time.time()) + (auto_expiration_hours * 3600)
+
+        payload = {
+            "ticker": ticker,
+            "client_order_id": client_order_id,
+            "side": side,
+            "action": action,
+            "count": count,
+            "type": type,
+        }
+
+        optional_params = {
+            "yes_price": yes_price,
+            "no_price": no_price,
+            "time_in_force": time_in_force,
+            "expiration_ts": expiration_ts,
+            "sell_position_floor": sell_position_floor,
+            "buy_max_cost": buy_max_cost,
+            "close_cancel_count": close_cancel_count,
+            "source": source,
+        }
+
+        for key, value in optional_params.items():
+            if value is not None:
+                payload[key] = value
+
+        return payload
 
 
 class KalshiClient(iApiClient):
