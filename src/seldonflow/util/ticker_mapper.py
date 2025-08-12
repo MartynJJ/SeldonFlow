@@ -1,7 +1,10 @@
+from seldonflow.util.custom_types import Temp
+
 from abc import ABC, abstractmethod
 from datetime import date, datetime
 from typing import Tuple
 from enum import Enum
+import numpy as np
 import math
 
 
@@ -29,6 +32,35 @@ KALSHI_MAX_TEMP_LOCATION_TO_TICKER = {
     TempLocation.NYC: "KXHIGHNY",
     TempLocation.INVALID: "",
 }
+
+
+class TempTickerEvent:
+    ticker: str
+    cap_strike: Temp
+    floor_strike: Temp
+
+    def __init__(self, event_info_market: dict):
+        self.ticker = event_info_market.get("ticker", "")
+        self.cap_strike = Temp.from_f(
+            event_info_market.get("cap_strike", np.inf)
+            - (1 if event_info_market.get("strike_type", "") == "less" else 0)
+        )
+        self.floor_strike = Temp.from_f(
+            event_info_market.get("floor_strike", -np.inf)
+            + (1 if event_info_market.get("strike_type", "") == "greater" else 0)
+        )
+
+        assert len(self.ticker) > 0
+        assert (
+            np.isinf(self.cap_strike.as_celsius())
+            + np.isinf(self.floor_strike.as_celsius())
+        ) < 2
+
+    def contains(self, temp: Temp):
+        return temp <= self.cap_strike and temp >= self.floor_strike
+
+    def __repr__(self) -> str:
+        return f"Ticker: {self.ticker} [{self.floor_strike.as_fahrenheit()}, {self.cap_strike.as_fahrenheit()}]"
 
 
 class MaxTempTicker:

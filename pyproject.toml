@@ -8,7 +8,7 @@ packages = [{include = "seldonflow", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-kalshi-python = "^1.0.0"  # Kalshi SDK
+kalshi-python = "^2.0.0"  # Kalshi SDK
 kalshi-python-unofficial = "^0.0.1"
 pyyaml = "^6.0"           
 apscheduler = "^3.10"     

@@ -52,6 +52,7 @@ class Config:
                     "desc": strategy_config.get("desc", ""),
                     "tick_interval": Seconds(tick_interval_raw),
                     "live": strategy_config.get("live", False),
+                    "parameters": strategy_config.get("parameters", {}),
                 }
         self._configs[ConfigType.Strategy] = return_dict
 

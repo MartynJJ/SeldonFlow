@@ -1,10 +1,12 @@
 # types.py cannot be used as conflicts with built in types
+from enum import Enum
 from typing import NewType
 
 TimeStamp = NewType("TimeStamp", float)
 Seconds = NewType("Seconds", int)
 TempC = NewType("TempC", float)
 TempF = NewType("TempF", float)
+Price = NewType("Price", float)
 
 
 class Temp:
@@ -58,6 +60,48 @@ class Temp:
         if isinstance(other, Temp):
             return self._celsius >= other._celsius
         return NotImplemented
+
+
+class Side(Enum):
+    INVALID = "INVALID"
+    BUY = "BUY"
+    SELL = "SELL"
+
+    from_str = staticmethod(
+        lambda s: Side[s.upper()] if s.upper() in Side.__members__ else Side.INVALID
+    )
+
+    def to_sign(self):
+        if self == Side.BUY:
+            return 1
+        elif self == Side.SELL:
+            return -1
+        else:
+            return 0
+
+
+class MarketSide(Enum):
+    INVALID = "INVALID"
+    YES = "YES"
+    NO = "NO"
+
+    from_str = staticmethod(
+        lambda s: Side[s.upper()] if s.upper() in Side.__members__ else Side.INVALID
+    )
+
+
+class OrderType(Enum):
+    INVALID = "INVALID"
+    MARKET = "MARKET"
+    LIMIT = "LIMIT"
+    STOP = "STOP"
+
+    @staticmethod
+    def from_str(s: str):
+        try:
+            return OrderType[s.upper()]
+        except KeyError:
+            raise ValueError(f"Invalid order type: {s}")
 
 
 def main():

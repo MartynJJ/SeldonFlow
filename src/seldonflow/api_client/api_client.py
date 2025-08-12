@@ -1,6 +1,15 @@
 from seldonflow.util.config import Config
+from seldonflow.api_client.order import ExecutionOrder
 
 from abc import ABC, abstractmethod
+from datetime import date
+from enum import Enum
+
+
+class ApiMethod(Enum):
+    Invalid = "INVALID"
+    Get = "GET"
+    Post = "POST"
 
 
 class iApiClient(ABC):
@@ -27,4 +36,12 @@ class iApiClient(ABC):
 
     @abstractmethod
     def get_positions(self) -> dict:
+        pass
+
+    @abstractmethod
+    def get_event(self, base_ticker: str, event_date: date) -> dict:
+        pass
+
+    @abstractmethod
+    def send_order(self, execution_order: ExecutionOrder) -> dict:
         pass

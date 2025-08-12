@@ -1,7 +1,115 @@
+from seldonflow.api_client.order import (
+    ExecutionOrder,
+    ExecutionOrderDestination,
+    KalshiOrder,
+)
 from seldonflow.util.config import Config
-from seldonflow.api_client.api_client import iApiClient
+from seldonflow.util import custom_types
+from seldonflow.api_client.api_client import iApiClient, ApiMethod
 
 import kalshi
+from datetime import date, datetime
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
+import base64
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding, rsa, types
+from cryptography.exceptions import InvalidSignature
+from pathlib import Path
+from enum import Enum
+import requests
+
+
+class KalshiEndPoint(Enum):
+    Invalid = ""
+    Balance = "/trade-api/v2/portfolio/balance"
+
+
+class KalshiSubClient:
+    _public_key: str
+    _private_key_path: Path
+    _private_key: types.PrivateKeyTypes
+    _base_url: str = "https://api.elections.kalshi.com"
+
+    def __init__(self, public_key: str, private_key_path: Path):
+        self._public_key = public_key
+        self._private_key_path = private_key_path
+        self._private_key = self.load_private_key_from_file(private_key_path)
+
+    def _generate_msg_string(
+        self,
+        api_method: ApiMethod,
+        kalshi_end_point: KalshiEndPoint,
+        timestamp_str: str,
+    ):
+        assert api_method != ApiMethod.Invalid
+        assert kalshi_end_point != KalshiEndPoint.Invalid
+        return self._generate_msg_string_helper(
+            api_method.value, kalshi_end_point.value, timestamp_str
+        )
+
+    def _generate_msg_string_helper(
+        self, api_method: str, path: str, timestamp_str: str
+    ):
+        return timestamp_str + api_method + path
+
+    def _generate_signature(self, msg_string: str):
+        return self.sign_pss_text(self._private_key, msg_string)
+
+    def _generate_headers(
+        self, api_method: ApiMethod, kalshi_end_point: KalshiEndPoint
+    ) -> dict:
+        timestamp_str = str(int(datetime.now().timestamp() * 1000))
+        msg_string = self._generate_msg_string(
+            api_method=api_method,
+            kalshi_end_point=kalshi_end_point,
+            timestamp_str=timestamp_str,
+        )
+        return {
+            "KALSHI-ACCESS-KEY": "2f92cc1c-739b-4d94-a1c5-0b38f6e306b0",
+            "KALSHI-ACCESS-SIGNATURE": self._generate_signature(msg_string=msg_string),
+            "KALSHI-ACCESS-TIMESTAMP": timestamp_str,
+        }
+
+    def _request_get(self, api_endpoint: KalshiEndPoint):
+        headers = self._generate_headers(
+            api_method=ApiMethod.Get, kalshi_end_point=api_endpoint
+        )
+        return requests.get(self._base_url + api_endpoint.value, headers=headers)
+
+    @staticmethod
+    def load_private_key_from_file(file_path: Path) -> types.PrivateKeyTypes:
+        if not file_path.is_file():
+            raise FileNotFoundError(f"Private key file not found: {file_path}")
+
+        try:
+            with file_path.open("rb") as key_file:
+                key_data = key_file.read()
+                if not key_data:
+                    raise ValueError("Private key file is empty")
+                return serialization.load_pem_private_key(
+                    key_data,
+                    password=None,
+                    backend=default_backend(),
+                )
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"Failed to load private key: {str(e)}") from e
+
+    @staticmethod
+    def sign_pss_text(private_key: rsa.RSAPrivateKey, text: str) -> str:
+        message = text.encode("utf-8")
+        try:
+            signature = private_key.sign(
+                message,
+                padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.DIGEST_LENGTH,
+                ),
+                hashes.SHA256(),
+            )
+            return base64.b64encode(signature).decode("utf-8")
+        except InvalidSignature as e:
+            raise ValueError("RSA sign PSS failed") from e
 
 
 class KalshiClient(iApiClient):
@@ -38,3 +146,27 @@ class KalshiClient(iApiClient):
     def format_kalshi_positions(self, positions_raw: dict):
         positions = positions_raw.get("market_positions", [])
         return positions
+
+    def get_event(self, base_ticker: str, event_date: date):
+        event_ticker = f"{base_ticker}-{event_date.strftime('%y%b%d').upper()}"
+        return self.api.market.GetEvent(event_ticker=event_ticker)
+
+    @staticmethod
+    def dollar_to_cents(price: custom_types.Price):
+        return int(price * 100.0)
+
+    def send_order(self, execution_order: ExecutionOrder) -> dict:
+        assert execution_order.destination() == ExecutionOrderDestination.Kalshi
+        response = {}
+        print(execution_order)
+        if execution_order.get_market_side() == custom_types.MarketSide.NO:
+            response = self.api.portfolio.CreateOrder(
+                action=execution_order.side_to_str().lower(),
+                client_order_id=execution_order.client_order_id(),
+                count=execution_order.get_size(),
+                no_price=self.dollar_to_cents(execution_order.get_price()),
+                side=execution_order.get_market_side().value.lower(),
+                ticker=execution_order.get_ticker(),
+                type=execution_order.get_order_type().value.lower(),
+            )
+        return response

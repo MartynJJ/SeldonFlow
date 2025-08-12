@@ -27,18 +27,33 @@ class StrategyParams:
         self._desc = params_dict.get("desc", "")
         self._tick_interval = params_dict.get("tick_interval", Seconds(0))
         self._live = params_dict.get("live", False)
+        self._extra_params = self.parse_extra_params(params_dict.get("parameters", {}))
+        self._raw = params_dict
 
-    def strategy_type(self):
+    @staticmethod
+    def parse_extra_params(extra_params: list[dict]):
+        extra_params_return = dict()
+        for extra_param in extra_params:
+            extra_params_return[extra_param.get("name", "")] = extra_param
+        return extra_params_return
+
+    def get_params(self) -> dict:
+        return self._extra_params
+
+    def get_attribute(self, attribute: str):
+        return self._raw.get(attribute, "")
+
+    def strategy_type(self) -> StrategyType:
         return self._strategy_type
 
-    def tick_interval(self):
+    def tick_interval(self) -> Seconds:
         return self._tick_interval
 
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     def __repr__(self):
-        return f"StrategyParams(name={self._name}, type={self._strategy_type}, desc={self._desc}, tick_interval={self._tick_interval}, live={self._live})"
+        return f"StrategyParams(name={self._name}, type={self._strategy_type}, desc={self._desc}, tick_interval={self._tick_interval}, live={self._live}, params={self._extra_params})"
 
 
 class iStrategy(ABC):

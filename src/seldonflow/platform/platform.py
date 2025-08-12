@@ -18,6 +18,7 @@ class LivePlatform(iPlatform):
     _risk_manager: RiskManager
     _execution_manager: ExecutionManager
     _strategy_manager: StrategyManager
+    _today: date
 
     def __init__(self):
         self._config = Config()
@@ -25,6 +26,10 @@ class LivePlatform(iPlatform):
         self._risk_manager = RiskManager(self.api_client())
         self._execution_manager = ExecutionManager(self.api_client())
         self._strategy_manager = StrategyManager(self, self._config)
+        self._today = datetime.today().date()
+
+    def today(self) -> date:
+        return self._today
 
     def api_client(self) -> iApiClient:
         return self._api_client

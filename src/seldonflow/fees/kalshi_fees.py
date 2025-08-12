@@ -5,7 +5,8 @@
 from math import ceil
 
 
-def calculate_fee(price_in_dollars: float, number_of_contracts: int):
-    fee = 0.7 * number_of_contracts * price_in_dollars * (1 - price_in_dollars)
-    rounded_fee = 0.01 * ceil(100 * fee)
-    return rounded_fee
+def calculate_fee(price_in_dollars: float, number_of_contracts: int) -> float:
+    # avoid floating-point issues
+    price_cents = int(price_in_dollars * 100)
+    fee_hundredths = 7 * number_of_contracts * price_cents * (100 - price_cents)
+    return ceil(fee_hundredths / 10000) / 100
