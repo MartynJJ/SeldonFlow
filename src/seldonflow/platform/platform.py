@@ -5,6 +5,7 @@ from seldonflow.risk.risk_manager import RiskManager
 from seldonflow.execution.execution_manager import ExecutionManager
 from seldonflow.strategy.strategy_manager import StrategyManager
 from seldonflow.platform.i_platform import iPlatform
+from seldonflow.util import env
 
 import asyncio
 from datetime import datetime, date
@@ -20,7 +21,8 @@ class LivePlatform(iPlatform):
     _strategy_manager: StrategyManager
     _today: date
 
-    def __init__(self):
+    def __init__(self, environment: env.Environment):
+        super().__init__(environment=environment)
         self._config = Config()
         self._api_client = KalshiClient(config=self._config)
         self._risk_manager = RiskManager(self.api_client())

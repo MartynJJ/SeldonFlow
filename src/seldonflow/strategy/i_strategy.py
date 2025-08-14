@@ -1,17 +1,29 @@
 from seldonflow.util.custom_types import TimeStamp, Seconds
 from seldonflow.util.config import Config, ConfigType
 from seldonflow.strategy.strategy_types import StrategyType
+from seldonflow.api_client.order import ExecutionOrder
 
 from abc import ABC, abstractmethod
+from typing import List, Optional
 
 
 class ActionRequest:
-    def __init__(self, actions: list):
+    def __init__(self, actions: list, executions: List[ExecutionOrder] = []):
         self._actions = actions
+        self._executions = executions
 
     @staticmethod
     def no_action():
         return ActionRequest([])
+
+    def get_execution_next_execution(self) -> Optional[ExecutionOrder]:
+        if len(self._executions) == 0:
+            return None
+        else:
+            return self._executions.pop(0)
+
+    def __repr__(self) -> str:
+        return f"ActionRequest(actions={self._actions}, executions={self._executions})"
 
 
 class StrategyParams:

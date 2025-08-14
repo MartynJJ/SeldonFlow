@@ -1,6 +1,6 @@
 from seldonflow.strategy.strategy_types import StrategyType
 from seldonflow.util.custom_types import Seconds
-
+from seldonflow.util.logger import LoggingMixin
 from pathlib import Path
 from enum import Enum
 import yaml
@@ -16,13 +16,15 @@ class ConfigType(Enum):
     Strategy = 2
 
 
-class Config:
+class Config(LoggingMixin):
     def __init__(
         self, types: list[ConfigType] = [ConfigType.Api_Keys, ConfigType.Strategy]
     ):
+        super().__init__()
         self._types = types
         self._configs = {}
         self.load_configs()
+        self.logger.debug(f"Config Initialized")
 
     def load_configs(self):
         for config_type in self._types:

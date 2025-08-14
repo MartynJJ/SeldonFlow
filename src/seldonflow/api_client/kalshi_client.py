@@ -1,11 +1,11 @@
 from seldonflow.api_client.order import (
     ExecutionOrder,
-    ExecutionOrderDestination,
     KalshiOrder,
 )
 from seldonflow.util.config import Config
 from seldonflow.util import custom_types
 from seldonflow.api_client.api_client import iApiClient, ApiMethod
+from seldonflow.util.logger import LoggingMixin
 
 import kalshi
 from datetime import date, datetime
@@ -28,13 +28,14 @@ class KalshiEndPoint(Enum):
     Orders = "/trade-api/v2/portfolio/orders"
 
 
-class KalshiSubClient:
+class KalshiSubClient(LoggingMixin):
     _public_key: str
     _private_key_path: Path
     _private_key: types.PrivateKeyTypes
     _base_url: str = "https://api.elections.kalshi.com"
 
     def __init__(self, public_key: str, private_key_path: Path):
+        super().__init__()
         self._public_key = public_key
         self._private_key_path = private_key_path
         self._private_key = self.load_private_key_from_file(private_key_path)
@@ -93,6 +94,16 @@ class KalshiSubClient:
             self._base_url + api_endpoint.value, json=data, headers=headers
         )
 
+    def send_order(self, kalshi_order: ExecutionOrder) -> dict:
+        self.logger.info(f"Sending Kalshi Order: {kalshi_order}")
+        response = self.request_post(
+            KalshiEndPoint.Orders, kalshi_order.to_payload()
+        ).json()
+        status = response.get("status", "")
+        self.logger.info(f"Order Response {kalshi_order._order_id}: {status}")
+
+        return response
+
     @staticmethod
     def load_private_key_from_file(file_path: Path) -> types.PrivateKeyTypes:
         if not file_path.is_file():
@@ -127,75 +138,8 @@ class KalshiSubClient:
         except InvalidSignature as e:
             raise ValueError("RSA sign PSS failed") from e
 
-    @staticmethod
-    def create_order(
-        ticker: str,
-        client_order_id: str,
-        side: Literal["yes", "no"],
-        action: Literal["buy", "sell"],
-        count: int,
-        type: Literal["market", "limit"] = "market",
-        yes_price: Optional[int] = None,
-        no_price: Optional[int] = None,
-        time_in_force: Optional[Literal["ioc", "fok", "gtc", "gtd"]] = None,
-        expiration_ts: Optional[int] = None,
-        sell_position_floor: Optional[int] = None,
-        buy_max_cost: Optional[int] = None,
-        close_cancel_count: Optional[int] = None,
-        source: Optional[str] = None,
-        auto_expiration_hours: Optional[int] = None,
-    ) -> dict:
-        if type == "limit" and not (yes_price or no_price):
-            raise ValueError("Limit orders require either yes_price or no_price")
 
-        if side == "yes" and no_price:
-            raise ValueError("Cannot set no_price when side is 'yes'")
-
-        if side == "no" and yes_price:
-            raise ValueError("Cannot set yes_price when side is 'no'")
-
-        if time_in_force == "gtd" and not expiration_ts and not auto_expiration_hours:
-            raise ValueError(
-                "GTD orders require expiration_ts or auto_expiration_hours"
-            )
-
-        if yes_price and (yes_price < 1 or yes_price > 99):
-            raise ValueError("yes_price must be between 1 and 99 cents")
-
-        if no_price and (no_price < 1 or no_price > 99):
-            raise ValueError("no_price must be between 1 and 99 cents")
-
-        if auto_expiration_hours and not expiration_ts:
-            expiration_ts = int(time.time()) + (auto_expiration_hours * 3600)
-
-        payload = {
-            "ticker": ticker,
-            "client_order_id": client_order_id,
-            "side": side,
-            "action": action,
-            "count": count,
-            "type": type,
-        }
-
-        optional_params = {
-            "yes_price": yes_price,
-            "no_price": no_price,
-            "time_in_force": time_in_force,
-            "expiration_ts": expiration_ts,
-            "sell_position_floor": sell_position_floor,
-            "buy_max_cost": buy_max_cost,
-            "close_cancel_count": close_cancel_count,
-            "source": source,
-        }
-
-        for key, value in optional_params.items():
-            if value is not None:
-                payload[key] = value
-
-        return payload
-
-
-class KalshiClient(iApiClient):
+class KalshiClient(iApiClient, LoggingMixin):
     def __init__(self, config: Config):
         super().__init__(config)
         self.public_key_id = self._api_keys["public_key_id"]
@@ -242,17 +186,5 @@ class KalshiClient(iApiClient):
         return int(price * 100.0)
 
     def send_order(self, execution_order: ExecutionOrder) -> dict:
-        assert execution_order.destination() == ExecutionOrderDestination.Kalshi
-        response = {}
-        print(execution_order)
-        if execution_order.get_market_side() == custom_types.MarketSide.NO:
-            response = self.api.portfolio.CreateOrder(
-                action=execution_order.side_to_str().lower(),
-                client_order_id=execution_order.client_order_id(),
-                count=execution_order.get_size(),
-                no_price=self.dollar_to_cents(execution_order.get_price()),
-                side=execution_order.get_market_side().value.lower(),
-                ticker=execution_order.get_ticker(),
-                type=execution_order.get_order_type().value.lower(),
-            )
-        return response
+        assert execution_order.venue() == custom_types.Venue.KALSHI
+        return self._sub_client.send_order(kalshi_order=execution_order)

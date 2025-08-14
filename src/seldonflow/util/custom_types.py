@@ -104,6 +104,23 @@ class OrderType(Enum):
             raise ValueError(f"Invalid order type: {s}")
 
 
+class TimeInForce(Enum):
+    INVALID = "INVALID"
+    IOC = "IOC"
+    FOC = "FOC"
+    GTC = "GTC"
+    GTD = "GTD"
+
+
+KALSHI_TIME_IN_FORCE = set([TimeInForce.IOC, TimeInForce.FOC, TimeInForce.GTC, None])
+
+
+class Venue(Enum):
+    INVALID = "INVALID"
+    KALSHI = "KALSHI"
+    POLYMARKET = "POLYMARKET"
+
+
 def main():
     time_stamp = TimeStamp(100.1)
     seconds = Seconds(1)

@@ -1,131 +1,133 @@
-from seldonflow.util.custom_types import Side, Price, OrderType, MarketSide
+from seldonflow.util import custom_types
 
 from abc import ABC, abstractmethod
-from enum import Enum
-
-
-class ExecutionOrderDestination(Enum):
-    Invalid = 0
-    Kalshi = 1
+from typing import Optional, Dict, Any
+import time
 
 
 class ExecutionOrder(ABC):
     _order_id_counter = 0
-    _unique_id: str
-
-    def __init__(self):
-        pass
-
-    def _generate_id(self) -> None:
-        self._unique_id = f"{self.destination()}_{self._order_id_counter}"
-        ExecutionOrder._order_id_counter += 1
-
-    @abstractmethod
-    def destination(self) -> ExecutionOrderDestination:
-        pass
-
-    @abstractmethod
-    def to_dict(self) -> dict:
-        pass
-
-    @abstractmethod
-    def side_to_str(self) -> str:
-        pass
-
-    def client_order_id(self) -> str:
-        return self._unique_id
-
-    @abstractmethod
-    def get_size(self) -> int:
-        pass
-
-    @abstractmethod
-    def get_price(self) -> Price:
-        pass
-
-    @abstractmethod
-    def get_market_side(self) -> MarketSide:
-        pass
-
-    @abstractmethod
-    def get_ticker(self) -> str:
-        pass
-
-    @abstractmethod
-    def get_order_type(self) -> OrderType:
-        pass
-
-    @abstractmethod
-    def __repr__(self) -> str:
-        pass
-
-
-class KalshiOrder(ExecutionOrder):
-    side: Side
-    market_side: MarketSide
-    size: int
-    price: Price
-    post_only: bool
-    ticker: str
-    fill_or_kill: bool
-    order_type: OrderType
-    _destination: ExecutionOrderDestination
+    _order_id: str
+    _ticker: str
+    _market_side: custom_types.MarketSide
+    _side: custom_types.Side
+    _count: int
+    _order_type: custom_types.OrderType
+    _price: Optional[custom_types.Price]
+    _venue: custom_types.Venue
 
     def __init__(
         self,
-        side: Side,
-        market_side: MarketSide,
-        size: int,
-        price: Price,
-        post_only: bool,
+        venue: custom_types.Venue,
         ticker: str,
-        fill_or_kill: bool,
-        order_type: OrderType,
+        market_side: custom_types.MarketSide,
+        side: custom_types.Side,
+        count: int,
+        order_type: custom_types.OrderType,
+        price: Optional[custom_types.Price] = None,
     ):
-        self._destination = ExecutionOrderDestination.Kalshi
-        self.side = side
-        self.market_side = market_side
-        self.size = size
-        self.price = price
-        self.post_only = post_only
-        self.ticker = ticker
-        self.fill_or_kill = fill_or_kill
-        self.order_type = order_type
-        self._generate_id()
-        print(f"Order Created: {self._unique_id}")
 
-    def destination(self) -> ExecutionOrderDestination:
-        return self._destination
+        self._ticker = ticker
+        self._market_side = market_side
+        self._side = side
+        self._count = count
+        self._order_type = order_type
+        self._price = price
+        self._venue = venue
+        self._order_id_count = self._order_id_counter
+        self._order_id = f"{str(int(time.time()))[2:]}_{self._order_id_count:07d}"
+        ExecutionOrder._order_id_counter += 1
+        if order_type == custom_types.OrderType.LIMIT and not price:
+            raise ValueError("Limit orders require either yes_price or no_price")
 
-    def side_to_str(self) -> str:
-        assert self.side != Side.INVALID
-        return str(self.side.value).lower()
+    def cent_price(self) -> Optional[int]:
+        if self._price:
+            return int(self._price * 100)
+        else:
+            return None
 
-    def to_dict(self) -> dict:
-        return {
-            "market_id": self.ticker,
-            "side": self.side_to_str(),
-            "size": self.size,
-            "price": self.price,
-            "post_only": self.post_only,
-            "fill_or_kill": self.fill_or_kill,
-            "order_type": str(self.order_type).lower(),
-        }
+    def yes_cent_price(self) -> Optional[int]:
+        assert self._market_side != custom_types.MarketSide.INVALID
+        if self._market_side == custom_types.MarketSide.YES:
+            return self.cent_price()
+        else:
+            return None
 
-    def get_size(self) -> int:
-        return self.size
+    def no_cent_price(self) -> Optional[int]:
+        assert self._market_side != custom_types.MarketSide.INVALID
+        if self._market_side == custom_types.MarketSide.NO:
+            return self.cent_price()
+        else:
+            return None
 
-    def get_price(self) -> Price:
-        return self.price
+    @abstractmethod
+    def to_payload(self) -> Dict[str, Any]:
+        pass
 
-    def get_market_side(self) -> MarketSide:
-        return self.market_side
-
-    def get_ticker(self) -> str:
-        return self.ticker
-
-    def get_order_type(self) -> OrderType:
-        return self.order_type
+    def venue(self) -> custom_types.Venue:
+        return self._venue
 
     def __repr__(self) -> str:
-        return f"KalshiOrder(ID: {self._unique_id}, Side: {self.side}, MarketSide: {self.market_side}, Size: {self.size}, Price: {self.price}, PostOnly: {self.post_only}, Ticker: {self.ticker}, FillOrKill: {self.fill_or_kill}, OrderType: {self.order_type})"
+        return f"ExecutionOrder(venue={self._venue}, ticker={self._ticker}, market_side={self._market_side}, side={self._side}, count={self._count}, order_type={self._order_type}, price={self._price})"
+
+
+class KalshiOrder(ExecutionOrder):
+    def __init__(
+        self,
+        ticker: str,
+        market_side: custom_types.MarketSide,
+        side: custom_types.Side,
+        count: int,
+        order_type: custom_types.OrderType,
+        price: Optional[custom_types.Price] = None,
+        time_in_force: Optional[custom_types.TimeInForce] = None,
+        expiration_ts: Optional[int] = None,
+    ):
+        super().__init__(
+            custom_types.Venue.KALSHI,
+            ticker,
+            market_side,
+            side,
+            count,
+            order_type,
+            price,
+        )
+        self._time_in_force = time_in_force
+        self._expiration_ts = expiration_ts
+        assert self._time_in_force in custom_types.KALSHI_TIME_IN_FORCE
+
+    def to_payload(self) -> Dict[str, Any]:
+        payload = {
+            "ticker": self._ticker,
+            "client_order_id": self._order_id,
+            "side": self._market_side.value.lower(),
+            "action": self._side.value.lower(),
+            "count": self._count,
+            "type": self._order_type.value.lower(),
+        }
+
+        optional_params = {
+            "yes_price": self.yes_cent_price(),
+            "no_price": self.no_cent_price(),
+            "time_in_force": (
+                self._time_in_force.value.lower() if self._time_in_force else None
+            ),
+            "expiration_ts": self._expiration_ts,
+            "sell_position_floor": None,
+            "buy_max_cost": None,
+            "close_cancel_count": None,
+            "source": None,
+        }
+        for key, value in optional_params.items():
+            if value is not None:
+                payload[key] = value
+
+        return payload
+
+    def __repr__(self) -> str:
+        return (
+            f"KalshiOrder(ticker={self._ticker}, market_side={self._market_side}, "
+            f"side={self._side}, count={self._count}, order_type={self._order_type}, "
+            f"price={self._price}, time_in_force={self._time_in_force}, "
+            f"expiration_ts={self._expiration_ts})"
+        )
