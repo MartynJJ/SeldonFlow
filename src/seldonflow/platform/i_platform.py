@@ -1,6 +1,6 @@
 from seldonflow.api_client.api_client import iApiClient
 from seldonflow.util import logger, env
-
+from seldonflow.strategy.i_strategy import ActionRequest
 from abc import ABC, abstractmethod
 from datetime import date
 
@@ -20,4 +20,8 @@ class iPlatform(ABC, logger.LoggingMixin):
 
     @abstractmethod
     def today(self) -> date:
+        pass
+
+    @abstractmethod
+    def receive_action_request(self, action_request: ActionRequest):
         pass

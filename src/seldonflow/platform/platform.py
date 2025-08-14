@@ -1,3 +1,4 @@
+from seldonflow.strategy.i_strategy import ActionRequest
 from seldonflow.util.config import Config
 from seldonflow.api_client.kalshi_client import KalshiClient
 from seldonflow.api_client.api_client import iApiClient
@@ -6,9 +7,10 @@ from seldonflow.execution.execution_manager import ExecutionManager
 from seldonflow.strategy.strategy_manager import StrategyManager
 from seldonflow.platform.i_platform import iPlatform
 from seldonflow.util import env
-
+from seldonflow.util import custom_types
 import asyncio
 from datetime import datetime, date
+from seldonflow.util.logger import LoggingMixin
 
 
 class LivePlatform(iPlatform):
@@ -19,16 +21,16 @@ class LivePlatform(iPlatform):
     _risk_manager: RiskManager
     _execution_manager: ExecutionManager
     _strategy_manager: StrategyManager
-    _today: date
+    _today: date = datetime.today().date()
 
     def __init__(self, environment: env.Environment):
         super().__init__(environment=environment)
+        self._today = datetime.today().date()
         self._config = Config()
         self._api_client = KalshiClient(config=self._config)
         self._risk_manager = RiskManager(self.api_client())
         self._execution_manager = ExecutionManager(self.api_client())
-        self._strategy_manager = StrategyManager(self, self._config)
-        self._today = datetime.today().date()
+        self._strategy_manager = StrategyManager(self, self._config, self.today())
 
     def today(self) -> date:
         return self._today
@@ -36,9 +38,9 @@ class LivePlatform(iPlatform):
     def api_client(self) -> iApiClient:
         return self._api_client
 
-    async def on_tick(self, current_time: int):
-        print(f"Current Time {current_time}")
-        self._risk_manager.on_tick()
+    async def on_tick(self, current_time: custom_types.TimeStamp):
+        self._risk_manager.on_tick(current_time)
+        self._strategy_manager.on_tick(current_time)
         return
 
     async def run(self):
@@ -47,11 +49,12 @@ class LivePlatform(iPlatform):
             await self.on_tick(current_time)
             await asyncio.sleep(self._tick_length_seconds)
 
-    def get_current_time(self) -> int:
+    def get_current_time(self) -> custom_types.TimeStamp:
         # use abstract method base class if simulation is implemented.
-        return int(datetime.now().timestamp())
+        return custom_types.TimeStamp(datetime.now().timestamp())
 
     def enable(self):
+        self._strategy_manager.load_strategies()
         self._enabled = True
         try:
             asyncio.run(self.run())
@@ -59,9 +62,15 @@ class LivePlatform(iPlatform):
             print("Stopped by user")
             self._enabled = False
 
+    def receive_action_request(self, action_request: ActionRequest):
+        self.logger.info(
+            f"Processing Action Request: Executions: {len(action_request._executions)}"
+        )
+        results = self._execution_manager.process_action_request(action_request)
+
 
 def main():
-    platform = LivePlatform()
+    platform = LivePlatform(env.Environment.TESTING)
     print(f"{platform._strategy_manager._strategy_params}")
 
 

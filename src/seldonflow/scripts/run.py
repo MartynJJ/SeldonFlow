@@ -1,9 +1,13 @@
 from seldonflow.platform.platform import LivePlatform
+from seldonflow.util.env import Environment
+
+ENV = Environment.TESTING
+# ENV = Environment.PRODUCTION
 
 
 def main():
     print("SeldonFlow Platform starting...")
-    live_platform = LivePlatform()
+    live_platform = LivePlatform(ENV)
     live_platform.enable()
 
 

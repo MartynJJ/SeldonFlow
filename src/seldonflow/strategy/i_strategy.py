@@ -2,6 +2,7 @@ from seldonflow.util.custom_types import TimeStamp, Seconds
 from seldonflow.util.config import Config, ConfigType
 from seldonflow.strategy.strategy_types import StrategyType
 from seldonflow.api_client.order import ExecutionOrder
+from seldonflow.util.logger import LoggingMixin
 
 from abc import ABC, abstractmethod
 from typing import List, Optional
@@ -68,10 +69,19 @@ class StrategyParams:
         return f"StrategyParams(name={self._name}, type={self._strategy_type}, desc={self._desc}, tick_interval={self._tick_interval}, live={self._live}, params={self._extra_params})"
 
 
-class iStrategy(ABC):
+class iStrategy(ABC, LoggingMixin):
 
     def __init__(self, params: StrategyParams):
+        super().__init__()
         self._params = params
+
+    @abstractmethod
+    def set_next_tick_time(self, next_tick_time: TimeStamp):
+        pass
+
+    @abstractmethod
+    def TICK_INTERVAL_SECONDS(self) -> TimeStamp:
+        pass
 
     def type(self):
         return self._params.strategy_type()
@@ -80,20 +90,29 @@ class iStrategy(ABC):
         return self._params.tick_interval()
 
     @abstractmethod
-    def on_tick(self, time_stamp: TimeStamp) -> ActionRequest:
+    def on_tick(self, current_time: TimeStamp) -> Optional[ActionRequest]:
         pass
+
+    def update_next_tick(self, current_time: TimeStamp):
+        self.set_next_tick_time(TimeStamp(current_time + self.TICK_INTERVAL_SECONDS()))
 
 
 class InvalidStrategy(iStrategy):
     def __init__(self, params: StrategyParams):
         super().__init__(params)
 
-    def on_tick(self, time_stamp: TimeStamp) -> ActionRequest:
+    def on_tick(self, current_time: TimeStamp) -> Optional[ActionRequest]:
         return ActionRequest.no_action()
 
     @staticmethod
     def create():
         return InvalidStrategy(StrategyParams("Invalid", {}))
+
+    def set_next_tick_time(self, next_tick_time: TimeStamp):
+        pass
+
+    def TICK_INTERVAL_SECONDS(self) -> TimeStamp:
+        return TimeStamp(0.0)
 
 
 def main():

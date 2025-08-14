@@ -1,4 +1,5 @@
 from seldonflow.util import custom_types
+from seldonflow.fees import kalshi_fees
 
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any
@@ -61,6 +62,14 @@ class ExecutionOrder(ABC):
             return None
 
     @abstractmethod
+    def fee_dollars(self) -> float:
+        pass
+
+    @abstractmethod
+    def notional_cents(self) -> int:
+        pass
+
+    @abstractmethod
     def to_payload(self) -> Dict[str, Any]:
         pass
 
@@ -95,6 +104,21 @@ class KalshiOrder(ExecutionOrder):
         self._time_in_force = time_in_force
         self._expiration_ts = expiration_ts
         assert self._time_in_force in custom_types.KALSHI_TIME_IN_FORCE
+
+    def notional_cents(self) -> int:
+        if not self.cent_price():
+            raise ValueError("No Notional Known")
+        if self._venue == custom_types.Venue.KALSHI:
+            cent_price = self.cent_price()
+            return self._count * cent_price if cent_price else 0
+        else:
+            raise ValueError(f"Unexpected Venue {self._venue}")
+
+    def fee_dollars(self) -> float:
+        if not self._price:
+            return 0.0
+        price = float(self._price) if self._price else 0.0
+        return kalshi_fees.calculate_fee(price, self._count)
 
     def to_payload(self) -> Dict[str, Any]:
         payload = {
