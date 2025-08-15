@@ -22,9 +22,13 @@ from seldonflow.util.ticker_mapper import (
     TempLocation,
 )
 from seldonflow.fees import kalshi_fees
+from seldonflow.data_collection import metar_data_collector
+from seldonflow.data_collection.data_manager import DataCollector, DataManager
 
-from datetime import date
+from datetime import date, time, datetime
 from typing import List, Dict, Any, Tuple, Optional
+import pandas as pd
+import math
 
 
 ABSOLUTE_ZERO = Temp.from_f(TempF(-459.67))
@@ -36,8 +40,16 @@ class TROS(iStrategy):
     _TICK_INTERVAL_SECONDS: TimeStamp = TimeStamp(60)
     _next_tick_time: TimeStamp = TimeStamp(0.0)
     _loaded: bool = False
+    _start_time = time(14, 0, 0)
+    _end_time = time(22, 0, 0)
 
-    def __init__(self, params: StrategyParams, api_client: iApiClient, today: date):
+    def __init__(
+        self,
+        params: StrategyParams,
+        api_client: iApiClient,
+        today: date,
+        data_manager: DataManager,
+    ):
         super().__init__(params)
         self._api_client = api_client
         self._location = self.get_location_from_params(params)
@@ -45,7 +57,12 @@ class TROS(iStrategy):
         self._event_info = {}
         self._max_observed = ABSOLUTE_ZERO
         self._today = today
+        self._data_manager = data_manager
         self.logger.info(f"TROS Loaded: {self}")
+
+    def is_timestamp_in_window(self, time_stamp: TimeStamp):
+        as_time = datetime.fromtimestamp(time_stamp).time()
+        return (self._start_time < as_time) and (as_time < self._end_time)
 
     def __repr__(self) -> str:
         return f"TROS(location={self._location}, base_ticker={self._base_ticker}, max_observed={self._max_observed})"
@@ -69,6 +86,8 @@ class TROS(iStrategy):
     def on_tick(self, current_time: TimeStamp) -> Optional[ActionRequest]:
         if current_time < self._next_tick_time:
             return None
+        if not self.is_timestamp_in_window(current_time):
+            return None
         self.logger.info(f"Evaluating TROS")
         if not self._loaded:
             self.initial_load()
@@ -84,8 +103,27 @@ class TROS(iStrategy):
         self.update_next_tick(current_time=current_time)
         return ActionRequest([], executions=executions)
 
+    def get_current_temperature(self) -> Temp:
+        station = metar_data_collector.TEMP_LOCATION_TO_STATION.get(self._location, "")
+        current_temp_opt = self._data_manager.metar_data().collect_station_data(
+            station=station
+        )
+        return current_temp_opt if current_temp_opt else ABSOLUTE_ZERO
+
     def get_max_observed_temperature(self, time_stamp: TimeStamp) -> Temp:
-        return Temp.from_f(TempF(0.0))
+        station = metar_data_collector.TEMP_LOCATION_TO_STATION.get(self._location, "")
+        if len(station):
+            file_date = datetime.fromtimestamp(time_stamp)
+            file_name = metar_data_collector.get_data_filename(
+                station=station, date=file_date
+            )
+            df = pd.read_csv(file_name)
+            max_temp = math.floor(df["TempF"].max())
+            current_temp = self.get_current_temperature().as_fahrenheit()
+            actual_max = max(max_temp, current_temp)
+            return Temp.from_f(TempF(actual_max))
+        else:
+            return ABSOLUTE_ZERO
 
     def set_max_observed_temperature(self, time_stamp: TimeStamp) -> None:
         self._max_observed = self.get_max_observed_temperature(time_stamp)

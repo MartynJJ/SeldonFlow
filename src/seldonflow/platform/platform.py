@@ -11,6 +11,7 @@ from seldonflow.util import custom_types
 import asyncio
 from datetime import datetime, date
 from seldonflow.util.logger import LoggingMixin
+from seldonflow.data_collection.data_manager import DataManager
 
 
 class LivePlatform(iPlatform):
@@ -21,6 +22,7 @@ class LivePlatform(iPlatform):
     _risk_manager: RiskManager
     _execution_manager: ExecutionManager
     _strategy_manager: StrategyManager
+    _data_manager: DataManager
     _today: date = datetime.today().date()
 
     def __init__(self, environment: env.Environment):
@@ -31,6 +33,7 @@ class LivePlatform(iPlatform):
         self._risk_manager = RiskManager(self.api_client())
         self._execution_manager = ExecutionManager(self.api_client())
         self._strategy_manager = StrategyManager(self, self._config, self.today())
+        self._data_manager = DataManager()
 
     def today(self) -> date:
         return self._today
@@ -41,6 +44,7 @@ class LivePlatform(iPlatform):
     async def on_tick(self, current_time: custom_types.TimeStamp):
         self._risk_manager.on_tick(current_time)
         self._strategy_manager.on_tick(current_time)
+        self._data_manager.on_tick(current_time=current_time)
         return
 
     async def run(self):
@@ -67,6 +71,9 @@ class LivePlatform(iPlatform):
             f"Processing Action Request: Executions: {len(action_request._executions)}"
         )
         results = self._execution_manager.process_action_request(action_request)
+
+    def data_manager(self) -> DataManager:
+        return self._data_manager
 
 
 def main():

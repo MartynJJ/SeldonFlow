@@ -1,8 +1,8 @@
 from seldonflow.platform.platform import LivePlatform
 from seldonflow.util.env import Environment
 
-ENV = Environment.TESTING
-# ENV = Environment.PRODUCTION
+# ENV = Environment.TESTING
+ENV = Environment.PRODUCTION
 
 
 def main():

@@ -44,7 +44,12 @@ class StrategyManager(LoggingMixin):
         self, strategy_param: StrategyParams, platform: iPlatform
     ) -> iStrategy:
         if strategy_param.strategy_type() == StrategyType.TemperatureRestingOrderSweep:
-            return TROS(strategy_param, platform.api_client(), platform.today())
+            return TROS(
+                strategy_param,
+                platform.api_client(),
+                platform.today(),
+                platform.data_manager(),
+            )
         else:
             self.logger.warning(
                 f"Strategy Not Loaded: {strategy_param.name()} {strategy_param.strategy_type()}"
