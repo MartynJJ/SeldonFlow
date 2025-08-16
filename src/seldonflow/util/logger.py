@@ -6,10 +6,13 @@ import sys
 from pathlib import Path
 from datetime import datetime
 import os
+import platform
 
 TEST_LOG_FILE = Path("seldonflow_test")
 PROD_LOG_FILE = Path("seldonflow")
 LOG_DIR = Path("logs")
+EXTERNAL_LOG_DIR = Path("src/seldonflow/data/shared/logs/SeldonFlow/")
+
 
 
 def get_log_file_path(env: Environment) -> Path:
@@ -58,6 +61,21 @@ def setup_logging(log_file: str, log_level: str):
     # file_handler = logging.FileHandler(log_file)
     file_handler.setFormatter(formatter)
 
+    os.makedirs(EXTERNAL_LOG_DIR, exist_ok=True)  # Ensure external log directory exists
+    computer_name = platform.node().replace(" ", "_")
+    external_log_file = EXTERNAL_LOG_DIR / f"{computer_name}_{Path(log_file).name}_{today}{extension}"
+    external_file_handler = TimedRotatingFileHandler(
+        filename=external_log_file,
+        when="midnight",
+        interval=1,
+        backupCount=30,
+        encoding="utf-8",
+        delay=False,
+        utc=False,
+    )
+    external_file_handler.suffix = "%Y-%m-%d"
+    external_file_handler.setFormatter(formatter)
+
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
 
@@ -67,6 +85,8 @@ def setup_logging(log_file: str, log_level: str):
     root_logger.handlers.clear()
 
     root_logger.addHandler(file_handler)
+    root_logger.addHandler(external_file_handler)
     root_logger.addHandler(console_handler)
+
 
     root_logger.propagate = False
