@@ -68,6 +68,7 @@ class TROS(iStrategy):
         return f"TROS(location={self._location}, base_ticker={self._base_ticker}, max_observed={self._max_observed})"
 
     def set_next_tick_time(self, next_tick_time: TimeStamp):
+        self.logger.info(f"Next Tick Time: {datetime.fromtimestamp(next_tick_time)}")
         self._next_tick_time = next_tick_time
 
     def TICK_INTERVAL_SECONDS(self) -> TimeStamp:
@@ -101,6 +102,7 @@ class TROS(iStrategy):
                 except KeyError as key_error:
                     print(f"Key Error: {key_error}")
         self.update_next_tick(current_time=current_time)
+        self.logger.info(f"Sending {len(executions)} execution(s). {executions}")
         return ActionRequest([], executions=executions)
 
     def get_current_temperature(self) -> Temp:
@@ -153,6 +155,7 @@ class TROS(iStrategy):
             orderbook = self.get_resting_orders(ticker.ticker).get("orderbook", {})
             yes_orders = orderbook.get("yes", {})
             opportunities[ticker] = yes_orders
+        self.logger.info(f"Resting Order Opportunities: {opportunities}")
         return opportunities
 
     def generate_execution_list(self) -> List[Dict[str, Any]]:

@@ -11,6 +11,9 @@ import math
 class TempLocation(Enum):
     INVALID = "INVALID"
     NYC = "NYC"
+    JFK = "JFK"
+    EWR = "EWR"
+    LGA = "LGA"
 
     @staticmethod
     def from_string(location_str: str):

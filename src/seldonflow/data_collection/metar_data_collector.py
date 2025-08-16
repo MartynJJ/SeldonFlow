@@ -14,12 +14,15 @@ import io
 import csv
 import os
 
-STATION_IDS = ["KNYC"]
+STATION_IDS = ["KNYC", "KJFK", "KLGA", "KEWR"]
 
 DATA_PATH = Path("src/seldonflow/data/shared/weather/metar")
 
 TEMP_LOCATION_TO_STATION = {
     ticker_mapper.TempLocation.NYC: "KNYC",
+    ticker_mapper.TempLocation.JFK: "KJFK",
+    ticker_mapper.TempLocation.LGA: "KLGA",
+    ticker_mapper.TempLocation.EWR: "KEWR",
 }
 
 
