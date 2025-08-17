@@ -46,7 +46,7 @@ def setup_logging(log_file: str, log_level: str):
 
     today = datetime.now().strftime("%Y%m%d")
     extension = ".log"
-    daily_log_file = f"{log_file}_{extension}"
+    daily_log_file = f"{log_file}{extension}"
     file_handler = TimedRotatingFileHandler(
         filename=daily_log_file,
         when="midnight",
@@ -63,7 +63,7 @@ def setup_logging(log_file: str, log_level: str):
     os.makedirs(EXTERNAL_LOG_DIR, exist_ok=True)  # Ensure external log directory exists
     computer_name = platform.node().replace(" ", "_")
     external_log_file = (
-        EXTERNAL_LOG_DIR / f"{computer_name}_{Path(log_file).name}_{extension}"
+        EXTERNAL_LOG_DIR / f"{computer_name}_{Path(log_file).name}{extension}"
     )
     external_file_handler = TimedRotatingFileHandler(
         filename=external_log_file,
