@@ -4,15 +4,22 @@ from seldonflow.strategy.i_strategy import ActionRequest
 from seldonflow.api_client.order import ExecutionOrder
 from typing import Dict, Any
 from seldonflow.util import custom_types
+from seldonflow.api_client.kalshi_client import KalshiClient
 
 
 class ExecutionManager(LoggingMixin):
-    _api_client: iApiClient
     _trading_enabled: bool = False
+    _kalshi_client: KalshiClient
 
-    def __init__(self, api_client: iApiClient):
+    def __init__(self, kalshi_client: KalshiClient):
         super().__init__()
-        self._api_client = api_client
+        self._kalshi_client = kalshi_client
+        self._trading_enabled = False
+
+    def enable(self):
+        self._trading_enabled = True
+
+    def disable(self):
         self._trading_enabled = False
 
     def process_action_request(self, action_request: ActionRequest) -> Dict[str, Any]:
@@ -23,6 +30,14 @@ class ExecutionManager(LoggingMixin):
                 continue
 
         return {}
+
+    def process_execution(self, execution_order: ExecutionOrder) -> Dict[str, Any]:
+        if execution_order.venue() == custom_types.Venue.KALSHI:
+            response = self._kalshi_client.send_order(execution_order=execution_order)
+            return response
+        else:
+            ValueError("Venue not enabled")
+            return {}
 
     def get_execution_balance_required(self, order: ExecutionOrder) -> int:
         if order._side == custom_types.Side.SELL:
@@ -36,7 +51,7 @@ class ExecutionManager(LoggingMixin):
 
     def is_trade_valid(self, order: ExecutionOrder):
         balance_required = self.get_execution_balance_required(order=order)
-        balance = int(100 * self._api_client.get_balances().get("USD", 0.0))
+        balance = int(100 * self._kalshi_client.get_balances().get("USD", 0.0))
         if balance < balance_required:
             self.logger.info(
                 f"Insufficient Balance: {order._order_id} - Balance: {balance} - Balance Required: {balance_required}"

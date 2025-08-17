@@ -135,7 +135,7 @@ class TROS(iStrategy):
             )
             df = pd.read_csv(file_name)
             max_temp = math.floor(df["TempF"].max())
-            current_temp = self.get_current_temperature().as_fahrenheit()
+            current_temp = math.floor(self.get_current_temperature().as_fahrenheit())
             actual_max = max(max_temp, current_temp)
             return Temp.from_f(TempF(actual_max))
         else:

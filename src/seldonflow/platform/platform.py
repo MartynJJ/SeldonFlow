@@ -31,7 +31,7 @@ class LivePlatform(iPlatform):
         self._config = Config()
         self._api_client = KalshiClient(config=self._config)
         self._risk_manager = RiskManager(self.api_client())
-        self._execution_manager = ExecutionManager(self.api_client())
+        self._execution_manager = ExecutionManager(self._api_client)
         self._strategy_manager = StrategyManager(self, self._config, self.today())
         self._data_manager = DataManager()
 

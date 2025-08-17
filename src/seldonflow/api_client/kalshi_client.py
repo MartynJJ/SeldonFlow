@@ -18,7 +18,7 @@ from cryptography.exceptions import InvalidSignature
 from pathlib import Path
 from enum import Enum
 import requests
-from typing import Optional, Literal
+from typing import Optional, Literal, Dict, Any
 import time
 
 
@@ -94,7 +94,7 @@ class KalshiSubClient(LoggingMixin):
             self._base_url + api_endpoint.value, json=data, headers=headers
         )
 
-    def send_order(self, kalshi_order: ExecutionOrder) -> dict:
+    def send_order(self, kalshi_order: ExecutionOrder) -> Dict[str, Any]:
         self.logger.info(f"Sending Kalshi Order: {kalshi_order}")
         response = self.request_post(
             KalshiEndPoint.Orders, kalshi_order.to_payload()
@@ -185,6 +185,6 @@ class KalshiClient(iApiClient, LoggingMixin):
     def dollar_to_cents(price: custom_types.Price):
         return int(price * 100.0)
 
-    def send_order(self, execution_order: ExecutionOrder) -> dict:
+    def send_order(self, execution_order: ExecutionOrder) -> Dict[str, Any]:
         assert execution_order.venue() == custom_types.Venue.KALSHI
         return self._sub_client.send_order(kalshi_order=execution_order)
