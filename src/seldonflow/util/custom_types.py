@@ -1,12 +1,24 @@
 # types.py cannot be used as conflicts with built in types
 from enum import Enum
 from typing import NewType
+import pytz
+from datetime import datetime
 
 TimeStamp = NewType("TimeStamp", float)
 Seconds = NewType("Seconds", int)
 TempC = NewType("TempC", float)
 TempF = NewType("TempF", float)
 Price = NewType("Price", float)
+
+
+def time_stamp_to_NYC(time_stamp: TimeStamp):
+    return datetime.fromtimestamp(time_stamp, tz=pytz.timezone("America/New_York"))
+
+
+def time_stamp_to_NYC_str(time_stamp: TimeStamp):
+    return datetime.fromtimestamp(
+        time_stamp, tz=pytz.timezone("America/New_York")
+    ).strftime("%Y-%m-%d %H:%M:%S %Z")
 
 
 class Temp:

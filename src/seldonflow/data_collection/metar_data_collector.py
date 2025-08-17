@@ -13,6 +13,7 @@ from datetime import datetime
 import io
 import csv
 import os
+import pytz
 
 STATION_IDS = ["KNYC", "KJFK", "KLGA", "KEWR"]
 
@@ -39,6 +40,7 @@ def get_data_filename(station: str, date: Date):
 def format_csv_row(timestamp: custom_types.TimeStamp, temp: custom_types.Temp):
     return [
         timestamp,
+        custom_types.time_stamp_to_NYC_str(timestamp),
         f"{temp.as_celsius():.1f}",
         f"{temp.as_fahrenheit():.1f}",
     ]
@@ -87,9 +89,10 @@ class MetarCollector(LoggingMixin, data_collector.DataCollector):
         row_formatted = format_csv_row(time_stamp, temp)
         output = io.StringIO()
         writer = csv.writer(output, lineterminator="\n")
-        date = datetime.fromtimestamp(time_stamp)
+        date = custom_types.time_stamp_to_NYC(time_stamp=time_stamp).date()
         file_name = get_data_filename(station=station, date=date)
         existing_content = os.path.exists(file_name)
+        COLUMNS = ["TimeStamp", "Time", "TempC", "TempF"]
         try:
             with open(file_name, "r") as f:
                 existing_content = f.read()
@@ -100,16 +103,16 @@ class MetarCollector(LoggingMixin, data_collector.DataCollector):
         except FileNotFoundError:
             # Write header for new file
             self.logger.info(f"Generating new file {file_name}")
-            writer.writerow(["Time", "TempC", "TempF"])
+            writer.writerow(COLUMNS)
             writer.writerow(row_formatted)
         except NameError:  # Pyodide environment (no file I/O)
             print("C")
-            writer.writerow(["TimeStamp", "TempC", "TempF"])
+            writer.writerow(COLUMNS)
             writer.writerow(row_formatted)
         with open(file_name, "a" if existing_content else "w") as f:
             writer = csv.writer(f, lineterminator="\n")
             if not existing_content:
-                writer.writerow(["Time", "TempC", "TempF"])
+                writer.writerow(COLUMNS)
             writer.writerow(row_formatted)
         return output.getvalue()
 

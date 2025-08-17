@@ -14,7 +14,6 @@ LOG_DIR = Path("logs")
 EXTERNAL_LOG_DIR = Path("src/seldonflow/data/shared/logs/SeldonFlow/")
 
 
-
 def get_log_file_path(env: Environment) -> Path:
     if env == Environment.PRODUCTION:
         return LOG_DIR / PROD_LOG_FILE
@@ -63,7 +62,9 @@ def setup_logging(log_file: str, log_level: str):
 
     os.makedirs(EXTERNAL_LOG_DIR, exist_ok=True)  # Ensure external log directory exists
     computer_name = platform.node().replace(" ", "_")
-    external_log_file = EXTERNAL_LOG_DIR / f"{computer_name}_{Path(log_file).name}_{today}{extension}"
+    external_log_file = (
+        EXTERNAL_LOG_DIR / f"{computer_name}_{Path(log_file).name}_{today}{extension}"
+    )
     external_file_handler = TimedRotatingFileHandler(
         filename=external_log_file,
         when="midnight",
@@ -87,6 +88,5 @@ def setup_logging(log_file: str, log_level: str):
     root_logger.addHandler(file_handler)
     root_logger.addHandler(external_file_handler)
     root_logger.addHandler(console_handler)
-
 
     root_logger.propagate = False
