@@ -6,6 +6,7 @@ from seldonflow.util.custom_types import (
     MarketSide,
     OrderType,
     Price,
+    time_stamp_to_NYC,
 )
 from seldonflow.strategy.i_strategy import (
     iStrategy,
@@ -68,11 +69,24 @@ class TROS(iStrategy):
         return f"TROS(location={self._location}, base_ticker={self._base_ticker}, max_observed={self._max_observed})"
 
     def set_next_tick_time(self, next_tick_time: TimeStamp):
-        self.logger.info(f"Next Tick Time: {datetime.fromtimestamp(next_tick_time)}")
+        date_time_from_ts = datetime.fromtimestamp(next_tick_time)
+        self.logger.info(f"Next Tick Time: {date_time_from_ts}")
         self._next_tick_time = next_tick_time
+        next_day_date = date_time_from_ts.date()
+        if next_day_date != self._today:
+            self.update_for_new_day()
 
     def TICK_INTERVAL_SECONDS(self) -> TimeStamp:
         return self._TICK_INTERVAL_SECONDS
+
+    def update_for_new_day(self):
+        new_day = time_stamp_to_NYC(self._next_tick_time).date()
+        self.logger.info(
+            f"Updating for new day. Current Day: {self._today.strftime('%Y-%m-%d')} New Day: {new_day.strftime('%Y-%m-%d')}"
+        )
+        self._today = new_day
+        self._max_observed = ABSOLUTE_ZERO
+        self.initial_load()
 
     @staticmethod
     def get_location_from_params(params):
