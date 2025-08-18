@@ -1,7 +1,7 @@
 from seldonflow.util import custom_types
 from seldonflow.util.logger import LoggingMixin
 from seldonflow.data_collection import data_collector
-from seldonflow.util.tick_manager import TickerManager
+from seldonflow.util.tick_manager import TickManager, FIVE_MINUTES
 from seldonflow.util import ticker_mapper
 from seldonflow.util.env import Environment
 
@@ -53,14 +53,11 @@ def format_csv_row(timestamp: custom_types.TimeStamp, temp: custom_types.Temp):
     ]
 
 
-FIVE_MINUTES = custom_types.TimeStamp(300)
-
-
 class MetarCollector(LoggingMixin, data_collector.DataCollector):
     def __init__(self, env: Environment = Environment.PRODUCTION):
         super().__init__()
         self._env = env
-        self._ticker_manager = TickerManager(custom_types.TimeStamp(FIVE_MINUTES))
+        self._ticker_manager = TickManager(custom_types.TimeStamp(FIVE_MINUTES))
         self._stations = STATION_IDS
         self.logger.info(
             f"Meta Data Collector Initialized: {self._env} - Stations: {self._stations}"

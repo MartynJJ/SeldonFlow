@@ -1,7 +1,10 @@
 from seldonflow.util import custom_types
 
+FIVE_MINUTES = custom_types.TimeStamp(300)
+ONE_HOUR = custom_types.TimeStamp(3600)
 
-class TickerManager:
+
+class TickManager:
     def __init__(self, tick_interval: custom_types.TimeStamp):
         self._tick_interval = tick_interval
         self._next_tick_update = custom_types.TimeStamp(0.0)
