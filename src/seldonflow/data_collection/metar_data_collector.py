@@ -3,6 +3,7 @@ from seldonflow.util.logger import LoggingMixin
 from seldonflow.data_collection import data_collector
 from seldonflow.util.tick_manager import TickerManager
 from seldonflow.util import ticker_mapper
+from seldonflow.util.env import Environment
 
 import requests
 from typing import Optional
@@ -18,6 +19,7 @@ import pytz
 STATION_IDS = ["KNYC", "KJFK", "KLGA", "KEWR"]
 
 DATA_PATH = Path("src/seldonflow/data/shared/weather/metar")
+DEV_DATA_PATH = Path("src/seldonflow/data/shared/DEV/weather/metar")
 
 TEMP_LOCATION_TO_STATION = {
     ticker_mapper.TempLocation.NYC: "KNYC",
@@ -33,8 +35,13 @@ def get_metar_url(station_id: str):
     )
 
 
-def get_data_filename(station: str, date: Date):
-    return DATA_PATH / f"{station}_{date.strftime('%Y-%m-%d')}.csv"
+def get_data_filename(
+    station: str, date: Date, env: Environment = Environment.PRODUCTION
+):
+    if env == Environment.PRODUCTION:
+        return DATA_PATH / f"{station}_{date.strftime('%Y-%m-%d')}.csv"
+    else:
+        return DEV_DATA_PATH / f"{station}_{date.strftime('%Y-%m-%d')}.csv"
 
 
 def format_csv_row(timestamp: custom_types.TimeStamp, temp: custom_types.Temp):
@@ -50,10 +57,14 @@ FIVE_MINUTES = custom_types.TimeStamp(300)
 
 
 class MetarCollector(LoggingMixin, data_collector.DataCollector):
-    def __init__(self):
+    def __init__(self, env: Environment = Environment.PRODUCTION):
         super().__init__()
+        self._env = env
         self._ticker_manager = TickerManager(custom_types.TimeStamp(FIVE_MINUTES))
         self._stations = STATION_IDS
+        self.logger.info(
+            f"Meta Data Collector Initialized: {self._env} - Stations: {self._stations}"
+        )
 
     def collect_all_data(self, time_stamp: custom_types.TimeStamp):
         for station in self._stations:
@@ -91,7 +102,7 @@ class MetarCollector(LoggingMixin, data_collector.DataCollector):
         output = io.StringIO()
         writer = csv.writer(output, lineterminator="\n")
         date = custom_types.time_stamp_to_NYC(time_stamp=time_stamp).date()
-        file_name = get_data_filename(station=station, date=date)
+        file_name = get_data_filename(station=station, date=date, env=self._env)
         existing_content = os.path.exists(file_name)
         COLUMNS = ["TimeStamp", "Time", "TempC", "TempF"]
         try:

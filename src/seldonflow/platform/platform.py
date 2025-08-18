@@ -27,13 +27,14 @@ class LivePlatform(iPlatform):
 
     def __init__(self, environment: env.Environment):
         super().__init__(environment=environment)
+        self._env = environment
         self._today = datetime.today().date()
         self._config = Config()
         self._api_client = KalshiClient(config=self._config)
         self._risk_manager = RiskManager(self._api_client, self._config)
         self._execution_manager = ExecutionManager(self._api_client)
         self._strategy_manager = StrategyManager(self, self._config, self.today())
-        self._data_manager = DataManager()
+        self._data_manager = DataManager(self._env)
 
     def today(self) -> date:
         return self._today
