@@ -16,6 +16,7 @@ class ExecutionOrder(ABC):
     _order_type: custom_types.OrderType
     _price: Optional[custom_types.Price]
     _venue: custom_types.Venue
+    _strategy: Optional[str]
 
     def __init__(
         self,
@@ -26,6 +27,7 @@ class ExecutionOrder(ABC):
         count: int,
         order_type: custom_types.OrderType,
         price: Optional[custom_types.Price] = None,
+        strategy: Optional[str] = None,
     ):
 
         self._ticker = ticker
@@ -37,6 +39,7 @@ class ExecutionOrder(ABC):
         self._venue = venue
         self._order_id_count = self._order_id_counter
         self._order_id = f"{str(int(time.time()))[2:]}_{self._order_id_count:07d}"
+        self._strategy = strategy
         ExecutionOrder._order_id_counter += 1
         if order_type == custom_types.OrderType.LIMIT and not price:
             raise ValueError("Limit orders require either yes_price or no_price")

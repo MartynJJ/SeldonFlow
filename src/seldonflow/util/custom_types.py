@@ -133,6 +133,12 @@ class Venue(Enum):
     POLYMARKET = "POLYMARKET"
 
 
+class Currency(Enum):
+    INVALID = "INVALID"
+    USD = "USD"
+    BTC = "BTC"
+
+
 def main():
     time_stamp = TimeStamp(100.1)
     seconds = Seconds(1)

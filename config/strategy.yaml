@@ -9,4 +9,7 @@ temperature_rest_order_sweep1:
       value: 20
       FromSymbol: "USD"
     - name: "Market"
-      location: "NYC" 
+      location: "NYC"
+    - name: "Risk"
+      risk_currency: "USD"
+      max_value_at_risk: 50.0

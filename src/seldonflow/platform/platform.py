@@ -30,8 +30,8 @@ class LivePlatform(iPlatform):
         self._today = datetime.today().date()
         self._config = Config()
         self._api_client = KalshiClient(config=self._config)
-        self._risk_manager = RiskManager(self.api_client())
-        self._execution_manager = ExecutionManager(self._api_client)
+        self._risk_manager = RiskManager(self._api_client)
+        self._execution_manager = ExecutionManager(self._api_client, self._config)
         self._strategy_manager = StrategyManager(self, self._config, self.today())
         self._data_manager = DataManager()
 
