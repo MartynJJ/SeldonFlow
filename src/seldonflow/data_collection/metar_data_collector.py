@@ -80,6 +80,7 @@ class MetarCollector(LoggingMixin, data_collector.DataCollector):
             self.logger.warning(
                 f"Metar Response Unexpected: {response.text} Temp Exctracted: {temp_raw}"
             )
+            return None
         celcius = custom_types.TempC(float(temp_raw[:3] + "." + temp_raw[-2:]))
         return custom_types.Temp(celcius)
 
