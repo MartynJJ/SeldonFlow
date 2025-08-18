@@ -145,6 +145,7 @@ class TROS(iStrategy):
         self._max_observed = self.get_max_observed_temperature(time_stamp)
 
     def get_all_active_tickers(self):
+        self._active_tickers.clear()
         self._event_info = self._api_client.get_event(self._base_ticker, self._today)
         markets = self._event_info.get("markets", [])
         for market in markets:

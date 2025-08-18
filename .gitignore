@@ -16,4 +16,4 @@ poetry.lock
 config/kalshi_key.pem
 scratch/**
 src/seldonflow/data/*
-logs/*i
+logs/*
