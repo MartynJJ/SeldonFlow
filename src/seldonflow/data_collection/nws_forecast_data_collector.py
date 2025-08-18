@@ -26,7 +26,7 @@ TEMP_LOCATION_TO_NWS_URL = {
 
 LOCATIONS_IN_USE = [ticker_mapper.TempLocation.NYC]
 
-CALL_TIMES_NY = {Time(hour=4), Time(hour=8), Time(hour=22)}
+CALL_TIMES_NY = {Time(hour=4), Time(hour=8), Time(hour=15), Time(hour=22)}
 
 
 def get_news_forecast_filepath(
@@ -79,8 +79,12 @@ class NwsForecastCollector(LoggingMixin, data_collector.DataCollector):
         )
         response_opt = self.get_forecast_hourly(location=location)
         if not response_opt:
-            self.logger.warning(f"NWS Data Pull Failed")
+            self.logger.warning(
+                f"NWS Data Pull Failed Location: {location.value} hour: {hour}"
+            )
+            return
         else:
+            assert response_opt
             parsed_forecast_list = self.parse_response_data(response_opt)
             if not parsed_forecast_list or len(parsed_forecast_list) == 0:
                 self.logger.warning(f"NWS Data Pull Failed")
@@ -169,7 +173,11 @@ class NwsForecastCollector(LoggingMixin, data_collector.DataCollector):
     def parse_response_data(
         self, response_data: Dict[str, Any]
     ) -> Optional[List[Dict[str, Any]]]:
-        periods_opt = response_data.get("periods")
+        properties = response_data.get("properties")
+        if not properties:
+            self.logger.warning(f"Missing Properties from NWS Data")
+            return None
+        periods_opt = properties.get("periods")
         if not periods_opt:
             self.logger.warning(f"Missing Periods from NWS Data")
             return None
