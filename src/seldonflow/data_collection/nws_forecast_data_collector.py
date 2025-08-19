@@ -92,6 +92,12 @@ class NwsForecastCollector(LoggingMixin, data_collector.DataCollector):
             df = pd.DataFrame(parsed_forecast_list)
             df["temp_F"] = df["temp"].apply(lambda x: x.as_fahrenheit() if x else None)
             df["temp_C"] = df["temp"].apply(lambda x: x.as_celsius() if x else None)
+            df["start_timestamp"] = df["start_time_parsed"].apply(
+                lambda x: x.timestamp() if x else None
+            )
+            df["end_timestamp"] = df["end_time_parsed"].apply(
+                lambda x: x.timestamp() if x else None
+            )
             df = df.drop("temp", axis=1)
             filepath = get_news_forecast_filepath(
                 data_path=self._data_path,
