@@ -2,7 +2,7 @@ from seldonflow.api_client.api_client import iApiClient
 from seldonflow.api_client import kalshi_client
 from seldonflow.util.config import Config
 from seldonflow.util.logger import LoggingMixin
-from seldonflow.util import custom_types
+from seldonflow.util import custom_types, custom_methods
 from seldonflow.api_client.order import ExecutionOrder
 
 from typing import List, Optional, Dict, Any
@@ -124,7 +124,9 @@ class RiskManager(LoggingMixin):
         self._risk_detail_by_venue = risk_external
 
     def periodic_update(self, current_time: custom_types.TimeStamp):
-        self.logger.info(f"Running Periodic Risk Update: {current_time}")
+        self.logger.info(
+            f"Running Periodic Risk Update: {custom_methods.time_stamp_to_NYC(current_time)}"
+        )
         self._last_periodic_update = current_time
         self.reconcile_and_update_risk()
 
