@@ -26,7 +26,13 @@ TEMP_LOCATION_TO_NWS_URL = {
 
 LOCATIONS_IN_USE = [ticker_mapper.TempLocation.NYC]
 
-CALL_TIMES_NY = {Time(hour=4), Time(hour=8), Time(hour=22)}
+CALL_TIMES_NY = {
+    Time(hour=4),
+    Time(hour=8),
+    Time(hour=12),
+    Time(hour=15),
+    Time(hour=22),
+}
 
 
 def get_news_forecast_filepath(
