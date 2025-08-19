@@ -6,6 +6,7 @@ from seldonflow.util import custom_types
 from seldonflow.api_client.order import ExecutionOrder
 
 from typing import List, Optional, Dict, Any
+from datetime import date as Date
 
 
 def get_strategy_risk_params(strategy_param: Dict[str, Any]) -> Dict[str, Any]:
@@ -66,6 +67,10 @@ class RiskManager(LoggingMixin):
     _next_tick_time: custom_types.TimeStamp = custom_types.TimeStamp(0.0)
     _kalshi_client: Optional[kalshi_client.KalshiClient] = None
     _strategy_risk_by_strategy: Dict[str, StrategyRisk] = {}
+    _last_periodic_update: custom_types.TimeStamp = custom_types.TimeStamp(0.0)
+    _PERIODIC_TICK_INTERVAL_SECONDS: custom_types.TimeStamp = custom_types.TimeStamp(
+        3600
+    )
 
     def __init__(
         self,
@@ -93,18 +98,44 @@ class RiskManager(LoggingMixin):
             return None
 
     def set_external_risk_by_venue(self):
-        self._risk_detail_by_venue[custom_types.Venue.KALSHI] = (
-            self.get_external_kalshi_risk()
-        )
+        self._risk_detail_by_venue = self.get_external_risk_by_venue()
+
+    def get_external_risk_by_venue(self) -> Dict[custom_types.Venue, Any]:
+        return {
+            custom_types.Venue.KALSHI: self.get_external_kalshi_risk(),
+        }
 
     def update_next_tick(self, current_time: custom_types.TimeStamp):
         self._next_tick_time = custom_types.TimeStamp(
             current_time + self._TICK_INTERVAL_SECONDS
         )
 
+    def reconcile_and_update_risk(self):
+        risk_external = self.get_external_risk_by_venue()
+        risk_internal = self._risk_detail_by_venue
+        for venue, risk in risk_external.items():
+            venue_risk_internal = risk_internal.get(venue)
+            if not venue_risk_internal:
+                self.logger.warning(f"Missing Risk for Venue = {venue} : {risk}")
+            if not venue_risk_internal == risk:
+                self.logger.warning(
+                    f"Unaccounted External Risk Change for Venue = {venue} : External: {risk} Internval: {venue_risk_internal}"
+                )
+        self._risk_detail_by_venue = risk_external
+
+    def periodic_update(self, current_time: custom_types.TimeStamp):
+        self.logger.info(f"Running Periodic Risk Update: {current_time}")
+        self._last_periodic_update = current_time
+        self.reconcile_and_update_risk()
+
     def on_tick(self, current_time: custom_types.TimeStamp):
         if current_time < self._next_tick_time:
             return
+        if (
+            current_time
+            > self._last_periodic_update + self._PERIODIC_TICK_INTERVAL_SECONDS
+        ):
+            self.periodic_update(current_time=current_time)
         self.log_risk()
         self.update_next_tick(current_time)
 
