@@ -8,6 +8,8 @@ import pandas as pd
 from typing import Dict, Any
 
 NWS_SUMMARY_DIR = Path("src/seldonflow/data/shared/weather/scraped")
+NWS_SUMMARY_TMAX_PATH = Path("src/seldonflow/data/shared/weather/nws_ds/")
+DEV_NWS_SUMMARY_TMAX_PATH = Path("src/seldonflow/data/shared/DEV/weather/nws_ds/")
 
 
 def get_nws_summary_filename(date: Date):
@@ -15,11 +17,23 @@ def get_nws_summary_filename(date: Date):
 
 
 class NWSDailySummaryAnalyzer(LoggingMixin):
+    _FILE_NAME = "TMAX_Daily_Summary.csv"
+
     def __init__(self, env: Environment):
         super().__init__()
         self._env = env
         self._enabled = True
+        self._output_path = (
+            NWS_SUMMARY_TMAX_PATH
+            if self._env == Environment.PRODUCTION
+            else DEV_NWS_SUMMARY_TMAX_PATH
+        )
         self.check_dir()
+
+    def produce_and_save_summary(self):
+        output_df = self.get_nws_final_max_temp()
+        file_path = self._output_path / self._FILE_NAME
+        output_df.to_csv(file_path)
 
     def check_dir(self):
         is_dir = NWS_SUMMARY_DIR.is_dir()
@@ -62,7 +76,7 @@ class NWSDailySummaryAnalyzer(LoggingMixin):
                 [output_df, new_dates_final_release.loc[:, ["Date", "MaxTemp"]]]
             )
         output_df.set_index("Date", inplace=True)
-        print(output_df)
+        return output_df
 
     @staticmethod
     def check_file_name_format(file_name: str):
@@ -74,7 +88,7 @@ class NWSDailySummaryAnalyzer(LoggingMixin):
 def main():
     env = Environment.DEVELOPMENT
     summary_analzyer = NWSDailySummaryAnalyzer(env)
-    files = summary_analzyer.get_nws_final_max_temp()
+    summary_analzyer.produce_and_save_summary()
 
 
 if __name__ == "__main__":
