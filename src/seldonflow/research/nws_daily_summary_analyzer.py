@@ -33,6 +33,9 @@ class NWSDailySummaryAnalyzer(LoggingMixin):
     def produce_and_save_summary(self):
         output_df = self.get_nws_final_max_temp()
         file_path = self._output_path / self._FILE_NAME
+        self.logger.info(
+            f"Saving {file_path} - First Dat: {output_df.iloc[0]} Last Date: {output_df.iloc[-1]}"
+        )
         output_df.to_csv(file_path)
 
     def check_dir(self):
