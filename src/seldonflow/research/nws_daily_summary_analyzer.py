@@ -4,6 +4,8 @@ from seldonflow.util.env import Environment
 import os
 from pathlib import Path
 from datetime import date as Date
+import pandas as pd
+from typing import Dict, Any
 
 NWS_SUMMARY_DIR = Path("src/seldonflow/data/shared/weather/scraped")
 
@@ -25,13 +27,42 @@ class NWSDailySummaryAnalyzer(LoggingMixin):
             self.logger.error(f"Incorrect Dir for NWS Summary {NWS_SUMMARY_DIR}")
             self._enabled = False
 
-    def get_all_files(self):
+    def get_all_files(self) -> Dict[Date, pd.DataFrame]:
         files = os.listdir(NWS_SUMMARY_DIR)
-        summary_files = []
+        summary_files = {}
         for file in files:
             if self.check_file_name_format(file):
-                summary_files.append(summary_files)
+                file_date = Date.fromisoformat(file[11:-4])
+                file_path = NWS_SUMMARY_DIR / file
+                summary_files[file_date] = pd.read_csv(file_path)
         return summary_files
+
+    def get_nws_final_max_temp(self):
+        output_df = pd.DataFrame(columns=["Date", "MaxTemp"])
+        files = self.get_all_files()
+        dates = list(files.keys())
+        dates.sort()
+        for date in dates:
+            df = files.get(date, pd.DataFrame())
+            assert len(df)
+            df["DATE"] = pd.to_datetime(df["DATE"])
+            df["RELEASE_DATE"] = pd.to_datetime(df["RELEASE_DATE"])
+            new_dates = df.loc[~df["DATE"].isin(output_df["Date"].to_list())].copy()
+            new_dates_final_release = new_dates.loc[
+                new_dates["DATE"] != new_dates["RELEASE_DATE"]
+            ].copy()
+            new_dates_final_release.rename(
+                columns={
+                    "DATE": "Date",
+                    "TMAX": "MaxTemp",
+                },
+                inplace=True,
+            )
+            output_df = pd.concat(
+                [output_df, new_dates_final_release.loc[:, ["Date", "MaxTemp"]]]
+            )
+        output_df.set_index("Date", inplace=True)
+        print(output_df)
 
     @staticmethod
     def check_file_name_format(file_name: str):
@@ -42,15 +73,8 @@ class NWSDailySummaryAnalyzer(LoggingMixin):
 
 def main():
     env = Environment.DEVELOPMENT
-    print(NWS_SUMMARY_DIR.is_dir())
-    print(get_nws_summary_filename(Date.fromisoformat("2025-08-17")))
-    print(
-        (
-            NWS_SUMMARY_DIR / get_nws_summary_filename(Date.fromisoformat("2025-08-17"))
-        ).is_file()
-    )
     summary_analzyer = NWSDailySummaryAnalyzer(env)
-    summary_analzyer.get_all_files()
+    files = summary_analzyer.get_nws_final_max_temp()
 
 
 if __name__ == "__main__":
