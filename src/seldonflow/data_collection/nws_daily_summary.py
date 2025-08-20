@@ -1,18 +1,27 @@
 from seldonflow.util.env import Environment
 from seldonflow.util.logger import LoggingMixin
+from seldonflow.util import tick_manager
+from seldonflow.util import custom_methods, custom_types
+from seldonflow.data_collection import data_collector
 
 import pandas as pd
 import requests
 import re
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
+from datetime import time as Time
 import pandas as pd
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Set
 
 MAX_NWS_VERSION = 50
 
 NWS_SUMMARY_OUTPUT_PATH = Path("src/seldonflow/data/shared/weather/scraped")
 DEV_NWS_SUMMARY_OUTPUT_PATH = Path("src/seldonflow/data/shared/DEV/weather/scraped")
+
+NWS_DAILY_SUMMARY_OUTPUT_PATH = Path("src/seldonflow/data/shared/weather/nws_ds")
+DEV_NWS_DAILY_SUMMARY_OUTPUT_PATH = Path(
+    "src/seldonflow/data/shared/DEV/weather/nws_ds"
+)
 
 
 def scrape_nws_climate(version=1):
@@ -166,36 +175,130 @@ def scrape_nws_climate(version=1):
         return None
 
 
-class WeatherScaper(LoggingMixin):
+class DailySummaryCollector(LoggingMixin, data_collector.DataCollector):
     def __init__(
         self,
         env: Environment,
         scrape_date: Optional[date] = None,
-    ) -> None:
+    ):
         super().__init__()
         self._env = env
+        self._tick_manager = tick_manager.TickManager(
+            tick_interval=tick_manager.FIVE_MINUTES
+        )
         self._output_path = (
             NWS_SUMMARY_OUTPUT_PATH
             if self._env == Environment.PRODUCTION
             else DEV_NWS_SUMMARY_OUTPUT_PATH
         )
+        self._nws_ds_path = (
+            NWS_DAILY_SUMMARY_OUTPUT_PATH
+            if self._env == Environment.PRODUCTION
+            else DEV_NWS_DAILY_SUMMARY_OUTPUT_PATH
+        )
         self._date = scrape_date or datetime.today().date()
         self._output_filename = f"NWS_SCRAPE_{self._date.isoformat()}.csv"
         self._data: Optional[pd.DataFrame] = None
+        self._events = {
+            Time(hour=3): {"run_next_day_offical_task"},
+        }
+        self._events_in_queue: Set[str] = set()
+        self._completed_daily_tasks: Set[str] = set()
 
-    def get_data(self) -> pd.DataFrame:
+    def collect_station_data(self, station: str) -> Optional[custom_types.Temp]:
+        pass
+
+    def on_tick(self, current_time: custom_types.TimeStamp):
+        if self._tick_manager.ready_with_auto_update(current_time=current_time):
+            self.time_event_handler(current_time=current_time)
+
+    def time_event_handler(self, current_time: custom_types.TimeStamp):
+        nyc_time = custom_methods.time_stamp_to_NYC(current_time)
+        nyc_hour = Time(hour=nyc_time.hour)
+        events_to_process = self._events.get(nyc_hour)
+        all_events_to_process = (
+            self._events_in_queue.union(events_to_process)
+            if events_to_process
+            else self._events_in_queue
+        )
+        if len(all_events_to_process) > 0:
+            self.logger.info(f"Found {len(all_events_to_process)} event(s) to process")
+            for event in all_events_to_process:
+                if event not in self._completed_daily_tasks:
+                    self.logger.info(f"Processing task: {event} for {nyc_time}")
+                    self._events_in_queue.add(event)
+                    task = getattr(self, event)
+                    sucess = task(current_time)
+                    if sucess:
+                        self._completed_daily_tasks.add(task)
+                        self._events_in_queue.remove(event)
+
+    def run_next_day_offical_task(self, current_time: custom_types.TimeStamp) -> bool:
+        data = self.pull_next_day_offical(current_time=current_time)
+        if not custom_methods.is_valid_dataframe(data):
+            self.logger.info(f"run_next_day_offical_task not completed")
+            return False
+        assert type(data) == pd.DataFrame
+        try:
+            data_date = date.fromisoformat(str(data.loc[1, "DATE"]))
+            self.save_next_day_official(data_date=data_date, data=data)
+            return True
+        except Exception as e:
+            self.logger.warning(f"NWS Daily Summary Offical Failed: {e}")
+            return False
+
+    def save_next_day_official(self, data_date: date, data: pd.DataFrame):
+        file_path = (
+            self._nws_ds_path / f"nws_offical_ds_{data_date.strftime('%Y%m%d')}.csv"
+        )
+        data.to_csv(file_path)
+
+    def pull_next_day_offical(
+        self, current_time: custom_types.TimeStamp
+    ) -> Optional[pd.DataFrame]:
+        data = self.get_version_data(version=1)
+        today = custom_methods.time_stamp_to_NYC(current_time).date()
+        yesterday = today - timedelta(days=1)
+        if not custom_methods.is_valid_dataframe(data):
+            self.logger.warning(
+                f"DataMissing for offical next day release. Today = {today}"
+            )
+            return None
+        assert type(data) == pd.DataFrame
+        if not len(data) == 1:
+            self.logger.warning(
+                f"Too many rows received in single data pull: {data.shape}"
+            )
+        data_release_date = date.fromisoformat(str(data.loc[1, "RELEASE_DATE"]))
+        data_date = date.fromisoformat(str(data.loc[1, "DATE"]))
+        if data_release_date != today or (data_date != yesterday):
+            self.logger.info(
+                f"Offical Next Day Data Not Avaliable DataDate = {data_date}, DataReleaseDate = {data_release_date}, Today = {today}"
+            )
+            return None
+        return data
+
+    def get_data(self, max_version=MAX_NWS_VERSION) -> pd.DataFrame:
         data_frames = []
-        for version in range(1, MAX_NWS_VERSION + 1):
+        for version in range(1, max_version + 1):
             try:
-                data = scrape_nws_climate(version=version)
-                df = pd.DataFrame(data, index=[version])
-                data_frames.append(df)
+                df = self.get_version_data(version=version)
+                if custom_methods.is_valid_dataframe(df):
+                    data_frames.append(df)
             except Exception as e:
                 self.logger.warning(f"Failed to scrape version {version}: {e}")
         if data_frames:
             return pd.concat(data_frames)
         else:
             raise RuntimeError("No data was scraped.")
+
+    def get_version_data(self, version: int) -> Optional[pd.DataFrame]:
+        try:
+            data = scrape_nws_climate(version=version)
+            df = pd.DataFrame(data, index=[version])
+            return df
+        except Exception as e:
+            raise ValueError(f"Failed to scrape version {version}: {e}")
 
     def save_data(self, data: pd.DataFrame) -> None:
         self._output_path.mkdir(parents=True, exist_ok=True)
@@ -206,21 +309,29 @@ class WeatherScaper(LoggingMixin):
         except Exception as e:
             self.logger.info(f"Error saving data: {e}")
 
-    def run(self) -> None:
+    def run_most_recent(self):
+        single_run = self.get_version_data(1)
+        return single_run
+
+    def run_full(self) -> None:
         self._data = self.get_data()
         self.save_data(self._data)
 
 
 def main() -> None:
-    weather_scaper = WeatherScaper(Environment.DEVELOPMENT)
-    weather_scaper.run()
-    if weather_scaper._data is not None and not weather_scaper._data.empty:
-        first_row = weather_scaper._data.iloc[0]
-        print(
-            f"Last Data: TMAX: {first_row.get('TMAX', 'N/A')} TMIN: {first_row.get('TMIN', 'N/A')}"
-        )
-    else:
-        print("Last Data: No data to display.")
+    weather_scaper = DailySummaryCollector(Environment.DEVELOPMENT)
+    # weather_scaper.run()
+    # if weather_scaper._data is not None and not weather_scaper._data.empty:
+    #     first_row = weather_scaper._data.iloc[0]
+    #     print(
+    #         f"Last Data: TMAX: {first_row.get('TMAX', 'N/A')} TMIN: {first_row.get('TMIN', 'N/A')}"
+    #     )
+    # else:
+    #     print("Last Data: No data to display.")
+    now = custom_types.TimeStamp(datetime.now().timestamp())
+    data = weather_scaper.pull_next_day_offical(now)
+    weather_scaper.time_event_handler(now)
+    # print(data)
 
 
 if __name__ == "__main__":

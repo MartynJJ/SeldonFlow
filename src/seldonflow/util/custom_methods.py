@@ -2,6 +2,7 @@ from seldonflow.util import custom_types
 import datetime
 import pytz
 from typing import Optional
+import pandas as pd
 
 _COMPASS_TO_DEGREES = {
     "N": 0.0,
@@ -37,3 +38,7 @@ def time_stamp_to_NYC_str(time_stamp: custom_types.TimeStamp):
     return datetime.datetime.fromtimestamp(
         time_stamp, tz=pytz.timezone("America/New_York")
     ).strftime("%Y-%m-%d %H:%M:%S %Z")
+
+
+def is_valid_dataframe(df: Optional[pd.DataFrame]) -> bool:
+    return df is not None and not df.empty
