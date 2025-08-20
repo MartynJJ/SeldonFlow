@@ -200,10 +200,18 @@ class DailySummaryCollector(LoggingMixin, data_collector.DataCollector):
         self._output_filename = f"NWS_SCRAPE_{self._date.isoformat()}.csv"
         self._data: Optional[pd.DataFrame] = None
         self._events = {
-            Time(hour=3): {"run_next_day_offical_task"},
+            Time(hour=3): {
+                "run_next_day_offical_task",
+            },
+            Time(hour=16): {
+                "run_same_day_inital_task",
+            },
         }
         self._events_in_queue: Set[str] = set()
         self._completed_daily_tasks: Set[str] = set()
+        self.logger.info(
+            f"DailySummaryCollector initliazed: {self._env} - {self._events}"
+        )
 
     def collect_station_data(self, station: str) -> Optional[custom_types.Temp]:
         pass
@@ -232,6 +240,10 @@ class DailySummaryCollector(LoggingMixin, data_collector.DataCollector):
                     if sucess:
                         self._completed_daily_tasks.add(task)
                         self._events_in_queue.remove(event)
+                    else:
+                        self.logger.info(
+                            f"Event: {event} unsuccessful. Events still in queue for next run {self._events_in_queue}"
+                        )
 
     def run_next_day_offical_task(self, current_time: custom_types.TimeStamp) -> bool:
         data = self.pull_next_day_offical(current_time=current_time)
@@ -252,6 +264,53 @@ class DailySummaryCollector(LoggingMixin, data_collector.DataCollector):
             self._nws_ds_path / f"nws_offical_ds_{data_date.strftime('%Y%m%d')}.csv"
         )
         data.to_csv(file_path)
+
+    def run_same_day_inital_task(self, current_time: custom_types.TimeStamp) -> bool:
+        data = self.pull_same_day_initial(current_time=current_time)
+        if not custom_methods.is_valid_dataframe(data):
+            self.logger.info(f"run_same_day_inital_task not completed")
+            return False
+        assert type(data) == pd.DataFrame
+        try:
+            data_date = date.fromisoformat(str(data.loc[1, "DATE"]))
+            self.save_same_day_initial(data_date=data_date, data=data)
+            return True
+        except Exception as e:
+            self.logger.warning(f"NWS Daily Summary Initial Failed: {e}")
+            return False
+
+    def save_same_day_initial(self, data_date: date, data: pd.DataFrame):
+        file_path = (
+            self._nws_ds_path / f"nws_initial_ds_{data_date.strftime('%Y%m%d')}.csv"
+        )
+        data.to_csv(file_path)
+
+    def pull_same_day_initial(
+        self, current_time: custom_types.TimeStamp
+    ) -> Optional[pd.DataFrame]:
+        data = self.get_version_data(version=1)
+        today = custom_methods.time_stamp_to_NYC(current_time).date()
+        if not custom_methods.is_valid_dataframe(data):
+            self.logger.warning(
+                f"DataMissing for initial same day release. Today = {today}"
+            )
+            return None
+        assert type(data) == pd.DataFrame
+        if not len(data) == 1:
+            self.logger.warning(
+                f"Too many rows received in single data pull: {data.shape}"
+            )
+        data_release_date = date.fromisoformat(str(data.loc[1, "RELEASE_DATE"]))
+        data_date = date.fromisoformat(str(data.loc[1, "DATE"]))
+        if data_release_date != today or (data_date != today):
+            self.logger.info(
+                f"Initial Same Day Data Not Avaliable DataDate = {data_date}, DataReleaseDate = {data_release_date}, Today = {today}"
+            )
+            return None
+        self.logger.info(
+            f"Successfully pulled inital NWS Daily Summary for {data_date}"
+        )
+        return data
 
     def pull_next_day_offical(
         self, current_time: custom_types.TimeStamp
