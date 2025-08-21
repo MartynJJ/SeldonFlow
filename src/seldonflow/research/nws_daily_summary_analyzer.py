@@ -51,7 +51,10 @@ class NWSDailySummaryAnalyzer(LoggingMixin):
             if self.check_file_name_format(file):
                 file_date = Date.fromisoformat(file[11:-4])
                 file_path = NWS_SUMMARY_DIR / file
-                summary_files[file_date] = pd.read_csv(file_path)
+                try:
+                    summary_files[file_date] = pd.read_csv(file_path)
+                except FileNotFoundError as file_not_found_e:
+                    self.logger.error(f"Missing File: {file_not_found_e}")
         return summary_files
 
     def get_nws_final_max_temp(self):

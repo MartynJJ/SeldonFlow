@@ -231,14 +231,14 @@ class DailySummaryCollector(LoggingMixin, data_collector.DataCollector):
         )
         if len(all_events_to_process) > 0:
             self.logger.info(f"Found {len(all_events_to_process)} event(s) to process")
-            for event in all_events_to_process:
+            for event in list(all_events_to_process):
                 if event not in self._completed_daily_tasks:
                     self.logger.info(f"Processing task: {event} for {nyc_time}")
                     self._events_in_queue.add(event)
                     task = getattr(self, event)
-                    sucess = task(current_time)
-                    if sucess:
-                        self._completed_daily_tasks.add(task)
+                    success = task(current_time)
+                    if success:
+                        self._completed_daily_tasks.add(event)
                         self._events_in_queue.remove(event)
                     else:
                         self.logger.info(
