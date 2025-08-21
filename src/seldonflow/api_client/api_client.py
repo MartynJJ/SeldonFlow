@@ -1,5 +1,5 @@
 from seldonflow.util.config import Config
-from seldonflow.api_client.order import ExecutionOrder
+from seldonflow.api_client.order import PredictionOrder
 
 from abc import ABC, abstractmethod
 from datetime import date
@@ -43,5 +43,5 @@ class iApiClient(ABC):
         pass
 
     @abstractmethod
-    def send_order(self, execution_order: ExecutionOrder) -> dict:
+    def send_order(self, execution_order: PredictionOrder) -> dict:
         pass

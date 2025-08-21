@@ -3,7 +3,7 @@ from seldonflow.api_client import kalshi_client
 from seldonflow.util.config import Config
 from seldonflow.util.logger import LoggingMixin
 from seldonflow.util import custom_types, custom_methods
-from seldonflow.api_client.order import ExecutionOrder
+from seldonflow.api_client.order import PredictionOrder
 
 from typing import List, Optional, Dict, Any
 from datetime import date as Date
@@ -144,7 +144,7 @@ class RiskManager(LoggingMixin):
     def log_risk(self):
         self.logger.info(f"{self.get_risk()}")
 
-    def get_execution_balance_required(self, order: ExecutionOrder) -> int:
+    def get_execution_balance_required(self, order: PredictionOrder) -> int:
         if order._side == custom_types.Side.SELL:
             return 0
         if order.venue == custom_types.Venue.KALSHI:
@@ -154,7 +154,7 @@ class RiskManager(LoggingMixin):
         else:
             raise ValueError(f"Unexpected Venue: {order.venue}")
 
-    def is_trade_valid(self, order: ExecutionOrder):
+    def is_trade_valid(self, order: PredictionOrder):
         strategy_name = order._strategy
         balance_required = self.get_execution_balance_required(order=order)
         balance = int(100 * self._api_client.get_balances().get("USD", 0.0))
@@ -170,7 +170,7 @@ class RiskManager(LoggingMixin):
                 return False
         return True
 
-    def process_execution_requests(self, execution_orders: List[ExecutionOrder]):
+    def process_execution_requests(self, execution_orders: List[PredictionOrder]):
         for execution_order in execution_orders:
             strategy_name = execution_order._strategy
             if self.is_trade_valid(execution_order):

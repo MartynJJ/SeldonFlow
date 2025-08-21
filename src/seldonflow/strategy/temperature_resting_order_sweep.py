@@ -133,7 +133,11 @@ class TROS(iStrategy):
             file_name = metar_data_collector.get_data_filename(
                 station=station, date=file_date
             )
-            df = pd.read_csv(file_name)
+            try:
+                df = pd.read_csv(file_name)
+            except FileNotFoundError as file_not_found_e:
+                self.logger.warning(f"Missing MetarData {file_not_found_e} ")
+                return ABSOLUTE_ZERO
             max_temp = math.floor(df["TempF"].max())
             current_temp = math.floor(self.get_current_temperature().as_fahrenheit())
             actual_max = max(max_temp, current_temp)

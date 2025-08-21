@@ -1,7 +1,7 @@
 from seldonflow.api_client.api_client import iApiClient
 from seldonflow.util.logger import LoggingMixin
 from seldonflow.strategy.i_strategy import ActionRequest
-from seldonflow.api_client.order import ExecutionOrder
+from seldonflow.api_client.order import PredictionOrder
 from typing import Dict, Any
 from seldonflow.util import custom_types
 from seldonflow.api_client.kalshi_client import KalshiClient
@@ -31,7 +31,7 @@ class ExecutionManager(LoggingMixin):
 
         return {}
 
-    def process_execution(self, execution_order: ExecutionOrder) -> Dict[str, Any]:
+    def process_execution(self, execution_order: PredictionOrder) -> Dict[str, Any]:
         if execution_order.venue() == custom_types.Venue.KALSHI:
             response = self._kalshi_client.send_order(execution_order=execution_order)
             return response
@@ -39,7 +39,7 @@ class ExecutionManager(LoggingMixin):
             ValueError("Venue not enabled")
             return {}
 
-    def get_execution_balance_required(self, order: ExecutionOrder) -> int:
+    def get_execution_balance_required(self, order: PredictionOrder) -> int:
         if order._side == custom_types.Side.SELL:
             return 0
         if order.venue == custom_types.Venue.KALSHI:
@@ -49,7 +49,7 @@ class ExecutionManager(LoggingMixin):
         else:
             raise ValueError(f"Unexpected Venue: {order.venue}")
 
-    def is_trade_valid(self, order: ExecutionOrder):
+    def is_trade_valid(self, order: PredictionOrder):
         balance_required = self.get_execution_balance_required(order=order)
         balance = int(100 * self._kalshi_client.get_balances().get("USD", 0.0))
         if balance < balance_required:

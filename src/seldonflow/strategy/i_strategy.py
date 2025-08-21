@@ -1,7 +1,7 @@
 from seldonflow.util.custom_types import TimeStamp, Seconds
 from seldonflow.util.config import Config, ConfigType
 from seldonflow.strategy.strategy_types import StrategyType
-from seldonflow.api_client.order import ExecutionOrder
+from seldonflow.api_client.order import PredictionOrder
 from seldonflow.util.logger import LoggingMixin
 
 from abc import ABC, abstractmethod
@@ -9,7 +9,7 @@ from typing import List, Optional
 
 
 class ActionRequest:
-    def __init__(self, actions: list, executions: List[ExecutionOrder] = []):
+    def __init__(self, actions: list, executions: List[PredictionOrder] = []):
         self._actions = actions
         self._executions = executions
 
@@ -17,7 +17,7 @@ class ActionRequest:
     def no_action():
         return ActionRequest([])
 
-    def get_execution_next_execution(self) -> Optional[ExecutionOrder]:
+    def get_execution_next_execution(self) -> Optional[PredictionOrder]:
         if len(self._executions) == 0:
             return None
         else:

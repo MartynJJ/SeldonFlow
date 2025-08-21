@@ -6,7 +6,12 @@ from typing import Optional, Dict, Any
 import time
 
 
-class ExecutionOrder(ABC):
+class Order(ABC):
+    def __init__(self):
+        pass
+
+
+class PredictionOrder(Order):
     _order_id_counter = 0
     _order_id: str
     _ticker: str
@@ -40,7 +45,7 @@ class ExecutionOrder(ABC):
         self._order_id_count = self._order_id_counter
         self._order_id = f"{str(int(time.time()))[2:]}_{self._order_id_count:07d}"
         self._strategy = strategy
-        ExecutionOrder._order_id_counter += 1
+        PredictionOrder._order_id_counter += 1
         if order_type == custom_types.OrderType.LIMIT and not price:
             raise ValueError("Limit orders require either yes_price or no_price")
 
@@ -83,7 +88,7 @@ class ExecutionOrder(ABC):
         return f"ExecutionOrder(venue={self._venue}, ticker={self._ticker}, market_side={self._market_side}, side={self._side}, count={self._count}, order_type={self._order_type}, price={self._price})"
 
 
-class KalshiOrder(ExecutionOrder):
+class KalshiOrder(PredictionOrder):
     def __init__(
         self,
         ticker: str,
