@@ -27,11 +27,30 @@ TEMP_LOCATION_TO_NWS_URL = {
 LOCATIONS_IN_USE = [ticker_mapper.TempLocation.NYC]
 
 CALL_TIMES_NY = {
+    Time(hour=0),
+    Time(hour=1),
+    Time(hour=2),
+    Time(hour=3),
     Time(hour=4),
+    Time(hour=5),
+    Time(hour=6),
+    Time(hour=7),
     Time(hour=8),
+    Time(hour=9),
+    Time(hour=10),
+    Time(hour=11),
     Time(hour=12),
+    Time(hour=13),
+    Time(hour=14),
     Time(hour=15),
+    Time(hour=16),
+    Time(hour=17),
+    Time(hour=18),
+    Time(hour=19),
+    Time(hour=20),
+    Time(hour=21),
     Time(hour=22),
+    Time(hour=23),
 }
 
 

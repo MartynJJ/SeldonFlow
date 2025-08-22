@@ -46,7 +46,6 @@ class LivePlatform(iPlatform):
         self._risk_manager.on_tick(current_time)
         self._strategy_manager.on_tick(current_time)
         self._data_manager.on_tick(current_time=current_time)
-        return
 
     async def run(self):
         while True:
@@ -66,6 +65,10 @@ class LivePlatform(iPlatform):
         except KeyboardInterrupt:
             print("Stopped by user")
             self._enabled = False
+        except Exception as e:
+            self.logger.error(f"Error: {e}")
+            self._enabled = False
+            raise
 
     def receive_action_request(self, action_request: ActionRequest):
         self.logger.info(
