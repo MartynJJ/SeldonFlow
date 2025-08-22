@@ -1,5 +1,6 @@
 from seldonflow.util import custom_methods, custom_types
 
+
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Union, Optional
@@ -33,4 +34,6 @@ def create_orderbook_dataframe(
     process_data(orderbook.get("yes"), 1)
     process_data(orderbook.get("no"), -1)
 
-    return pd.DataFrame(data.reshape(1, -1), columns=_COLUMN_RANGE, index=[timestamp])
+    df = pd.DataFrame(data.reshape(1, -1), columns=_COLUMN_RANGE, index=[timestamp])
+    df.index.name = "timestamp"
+    return df

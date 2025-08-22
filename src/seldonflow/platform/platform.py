@@ -34,7 +34,13 @@ class LivePlatform(iPlatform):
         self._risk_manager = RiskManager(self._api_client, self._config)
         self._execution_manager = ExecutionManager(self._api_client)
         self._strategy_manager = StrategyManager(self, self._config, self.today())
-        self._data_manager = DataManager(self._env)
+        self._data_manager = DataManager(self._env, self._api_client)
+
+    def load_data_manager(self):
+        if type(self._api_client) == KalshiClient:
+            self._data_manager = DataManager(self._env, self._api_client)
+        else:
+            self._data_manager = DataManager(self._env, None)
 
     def today(self) -> date:
         return self._today
@@ -45,7 +51,7 @@ class LivePlatform(iPlatform):
     async def on_tick(self, current_time: custom_types.TimeStamp):
         self._risk_manager.on_tick(current_time)
         self._strategy_manager.on_tick(current_time)
-        self._data_manager.on_tick(current_time=current_time)
+        await self._data_manager.on_tick(current_time=current_time)
 
     async def run(self):
         while True:

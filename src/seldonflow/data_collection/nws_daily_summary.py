@@ -216,7 +216,7 @@ class DailySummaryCollector(LoggingMixin, data_collector.DataCollector):
     def collect_station_data(self, station: str) -> Optional[custom_types.Temp]:
         pass
 
-    def on_tick(self, current_time: custom_types.TimeStamp):
+    async def on_tick(self, current_time: custom_types.TimeStamp):
         if self._tick_manager.ready_with_auto_update(current_time=current_time):
             self.time_event_handler(current_time=current_time)
 

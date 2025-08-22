@@ -188,3 +188,7 @@ class KalshiClient(iApiClient, LoggingMixin):
     def send_order(self, execution_order: PredictionOrder) -> Dict[str, Any]:
         assert execution_order.venue() == custom_types.Venue.KALSHI
         return self._sub_client.send_order(kalshi_order=execution_order)
+
+    def get_active_tickers(self, base_ticker: str, event_date: date):
+        event_info = self.get_event(base_ticker=base_ticker, event_date=event_date)
+        return [market.get("ticker") for market in event_info.get("markets", [])]

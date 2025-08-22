@@ -83,7 +83,7 @@ class NwsForecastCollector(LoggingMixin, data_collector.DataCollector):
     def new_day(self):
         self._call_times_collected.clear()
 
-    def on_tick(self, current_time: custom_types.TimeStamp):
+    async def on_tick(self, current_time: custom_types.TimeStamp):
         if not self._ticker_manager.ready_with_auto_update(current_time):
             return
         nyc_time = custom_methods.time_stamp_to_NYC(current_time)

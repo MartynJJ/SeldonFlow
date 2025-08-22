@@ -1,5 +1,6 @@
 from seldonflow.util import custom_types
 
+ONE_MINUTE = custom_types.TimeStamp(60)
 FIVE_MINUTES = custom_types.TimeStamp(300)
 ONE_HOUR = custom_types.TimeStamp(3600)
 

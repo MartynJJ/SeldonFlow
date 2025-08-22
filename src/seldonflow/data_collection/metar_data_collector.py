@@ -125,7 +125,7 @@ class MetarCollector(LoggingMixin, data_collector.DataCollector):
             writer.writerow(row_formatted)
         return output.getvalue()
 
-    def on_tick(self, current_time: custom_types.TimeStamp):
+    async def on_tick(self, current_time: custom_types.TimeStamp):
         if not self._ticker_manager.ready_with_auto_update(current_time):
             return
         else:

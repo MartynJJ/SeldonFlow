@@ -9,7 +9,7 @@ class DataCollector(ABC):
         pass
 
     @abstractmethod
-    def on_tick(self, current_time: custom_types.TimeStamp):
+    async def on_tick(self, current_time: custom_types.TimeStamp):
         pass
 
     @abstractmethod
