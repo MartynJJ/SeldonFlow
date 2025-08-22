@@ -90,18 +90,35 @@ class KalshiOrderBookCollector(LoggingMixin, data_collector.DataCollector):
         else:
             return None
 
+    # async def load_orderbook_if_exists_and_save_new_timepoint(
+    #     self, ticker: str, time_stamp: Optional[custom_types.TimeStamp] = None
+    # ):
+    #     file_path = self.get_ticker_orderbook_filename(ticker=ticker)
+    #     existing_orderbook = self.load_ticker_df(ticker=ticker)
+    #     new_orderbook = self.get_ticker_orderbook_df(
+    #         ticker=ticker, time_stamp=time_stamp
+    #     )
+    #     if custom_methods.is_valid_dataframe(existing_orderbook):
+    #         pd.concat([existing_orderbook, new_orderbook]).to_csv(file_path)
+    #     else:
+    #         new_orderbook.to_csv(file_path)
+
     async def load_orderbook_if_exists_and_save_new_timepoint(
         self, ticker: str, time_stamp: Optional[custom_types.TimeStamp] = None
     ):
         file_path = self.get_ticker_orderbook_filename(ticker=ticker)
-        existing_orderbook = self.load_ticker_df(ticker=ticker)
         new_orderbook = self.get_ticker_orderbook_df(
             ticker=ticker, time_stamp=time_stamp
         )
-        if custom_methods.is_valid_dataframe(existing_orderbook):
-            pd.concat([existing_orderbook, new_orderbook]).to_csv(file_path)
-        else:
-            new_orderbook.to_csv(file_path)
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        mode = "a" if file_path.is_file() else "w"
+        header = not file_path.is_file()
+
+        try:
+            new_orderbook.to_csv(file_path, mode=mode, header=header, index=True)
+        except Exception as error:
+            self.logger.error(f"Error saving orderbook for {ticker}: {error}")
 
     async def load_all_orderbooks_and_save(
         self, time_stamp: Optional[custom_types.TimeStamp] = None
