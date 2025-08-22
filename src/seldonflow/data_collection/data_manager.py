@@ -5,14 +5,18 @@ from seldonflow.data_collection.nws_forecast_data_collector import NwsForecastCo
 from seldonflow.data_collection.nws_daily_summary import DailySummaryCollector
 from seldonflow.data_collection.data_collector import DataCollector
 from seldonflow.util.env import Environment
-
-from typing import Dict
+from seldonflow.api_client import kalshi_client
+from typing import Dict, Optional
 
 
 class DataManager(LoggingMixin):
     _data_collectors: Dict[str, DataCollector]
 
-    def __init__(self, env: Environment = Environment.PRODUCTION):
+    def __init__(
+        self,
+        env: Environment = Environment.PRODUCTION,
+        kalshi_api: Optional[kalshi_client.KalshiClient] = None,
+    ):
         super().__init__()
         self._env = env
         self._data_collectors = {
@@ -20,6 +24,7 @@ class DataManager(LoggingMixin):
             "NwsForecast": NwsForecastCollector(self._env),
             "NWSDailySummary": DailySummaryCollector(env=self._env),
         }
+        self._kalshi_api = kalshi_api
         self.logger.info(f"Data Manager Initialized in {self._env}")
 
     def on_tick(self, current_time: custom_types.TimeStamp):
