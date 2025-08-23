@@ -46,27 +46,18 @@ class KalshiOrderBookCollector(LoggingMixin, data_collector.DataCollector):
         ]
         return temp_tickers
 
-    def get_active_tickers(
-        self, time_stamp: Optional[custom_types.TimeStamp] = None
-    ) -> List[str]:
-        if not time_stamp:
-            time_stamp = custom_types.TimeStamp(datetime.datetime.now().timestamp())
-        today = custom_methods.time_stamp_to_NYC(time_stamp=time_stamp).date()
-        todays_tickers = []
+    def get_active_tickers(self) -> List[str]:
+        active_tickers = []
         tomorrows_tickers = []
         for base_ticker in self._base_ticker:
             if base_ticker:
-                todays_tickers += self._kalshi_client.get_active_tickers(
-                    base_ticker=base_ticker, event_date=today
+                active_tickers += self._kalshi_client.get_active_tickers_for_event(
+                    "KXHIGHNY".upper()
                 )
-                tomorrows_tickers += self._kalshi_client.get_active_tickers(
-                    base_ticker=base_ticker,
-                    event_date=today + datetime.timedelta(days=1),
+                active_tickers += self._kalshi_client.get_active_tickers_for_series(
+                    ticker_mapper.FED_EVENT_TICKER
                 )
-        fed_decision_tickers = self._kalshi_client.get_active_tickers_for_series(
-            ticker_mapper.FED_EVENT_TICKER
-        )
-        return todays_tickers + tomorrows_tickers
+        return active_tickers
 
     def get_ticker_orderbook_df(
         self, ticker: str, time_stamp: Optional[custom_types.TimeStamp] = None
@@ -135,8 +126,7 @@ class KalshiOrderBookCollector(LoggingMixin, data_collector.DataCollector):
             try:
                 await self.load_all_orderbooks_and_save(time_stamp=current_time)
             except Exception as error:
-                self.logger.error(f"Error Pulling Orderbooks, disabling: {error}")
-                self._enabled = False
+                self.logger.error(f"Error Pulling Orderbooks : {error}")
 
     def collect_station_data(self, station: str) -> Optional[custom_types.Temp]:
         return None
