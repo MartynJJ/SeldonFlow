@@ -18,7 +18,7 @@ from cryptography.exceptions import InvalidSignature
 from pathlib import Path
 from enum import Enum
 import requests
-from typing import Optional, Literal, Dict, Any
+from typing import Optional, Literal, Dict, Any, List
 import time
 
 
@@ -26,6 +26,7 @@ class KalshiEndPoint(Enum):
     Invalid = ""
     Balance = "/trade-api/v2/portfolio/balance"
     Orders = "/trade-api/v2/portfolio/orders"
+    WebSocketTrades = "/trade-api/ws/v2"
 
 
 class KalshiSubClient(LoggingMixin):
@@ -33,6 +34,7 @@ class KalshiSubClient(LoggingMixin):
     _private_key_path: Path
     _private_key: types.PrivateKeyTypes
     _base_url: str = "https://api.elections.kalshi.com"
+    _base_wss_url: str = "wss://api.elections.kalshi.com"
 
     def __init__(self, public_key: str, private_key_path: Path):
         super().__init__()
@@ -181,6 +183,18 @@ class KalshiClient(iApiClient, LoggingMixin):
         event_ticker = f"{base_ticker}-{event_date.strftime('%y%b%d').upper()}"
         return self.api.market.GetEvent(event_ticker=event_ticker)
 
+    def get_active_tickers_for_event(self, event: str) -> List[str]:
+        markets = self.api.market.GetMarkets(series_ticker=event, limit=200).get(
+            "markets"
+        )
+        if markets:
+            return [
+                market["ticker"]
+                for market in markets
+                if market.get("status") == "active"
+            ]
+        return []
+
     @staticmethod
     def dollar_to_cents(price: custom_types.Price):
         return int(price * 100.0)
@@ -194,5 +208,5 @@ class KalshiClient(iApiClient, LoggingMixin):
         return [market.get("ticker") for market in event_info.get("markets", [])]
 
     def get_active_tickers_for_series(self, series_ticker: str):
-        series_info = self.api.market.GetMarkets(series_ticker=series_ticker)
+        series_info = self.api.market.GetMarkets(series_ticker=series_ticker, limit=200)
         return [market.get("ticker") for market in series_info.get("markets", [])]

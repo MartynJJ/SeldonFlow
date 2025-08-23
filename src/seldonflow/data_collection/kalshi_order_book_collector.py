@@ -5,7 +5,7 @@ from seldonflow.api_client.kalshi_client import KalshiClient
 from seldonflow.util import ticker_mapper
 from seldonflow.util import custom_methods, custom_types
 from seldonflow.data_collection import kalshi_order_book_utils
-from seldonflow.util import tick_manager
+from seldonflow.util import tick_manager, ticker_mapper
 
 import datetime
 from typing import Optional, List
@@ -46,8 +46,12 @@ class KalshiOrderBookCollector(LoggingMixin, data_collector.DataCollector):
         ]
         return temp_tickers
 
-    def get_active_tickers(self) -> List[str]:
-        today = datetime.datetime.now().date()
+    def get_active_tickers(
+        self, time_stamp: Optional[custom_types.TimeStamp] = None
+    ) -> List[str]:
+        if not time_stamp:
+            time_stamp = custom_types.TimeStamp(datetime.datetime.now().timestamp())
+        today = custom_methods.time_stamp_to_NYC(time_stamp=time_stamp).date()
         todays_tickers = []
         tomorrows_tickers = []
         for base_ticker in self._base_ticker:
@@ -59,6 +63,9 @@ class KalshiOrderBookCollector(LoggingMixin, data_collector.DataCollector):
                     base_ticker=base_ticker,
                     event_date=today + datetime.timedelta(days=1),
                 )
+        fed_decision_tickers = self._kalshi_client.get_active_tickers_for_series(
+            ticker_mapper.FED_EVENT_TICKER
+        )
         return todays_tickers + tomorrows_tickers
 
     def get_ticker_orderbook_df(

@@ -36,6 +36,8 @@ KALSHI_MAX_TEMP_LOCATION_TO_TICKER = {
     TempLocation.INVALID: "",
 }
 
+FED_EVENT_TICKER = "KXFEDDECISION"
+
 
 class TempTickerEvent:
     ticker: str

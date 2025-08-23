@@ -10,6 +10,7 @@ class ApiMethod(Enum):
     Invalid = "INVALID"
     Get = "GET"
     Post = "POST"
+    WebSocket = "GET"
 
 
 class iApiClient(ABC):
