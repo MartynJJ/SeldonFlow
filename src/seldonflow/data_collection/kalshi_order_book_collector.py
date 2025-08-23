@@ -54,7 +54,7 @@ class KalshiOrderBookCollector(LoggingMixin, data_collector.DataCollector):
                 active_tickers += self._kalshi_client.get_active_tickers_for_event(
                     "KXHIGHNY".upper()
                 )
-                active_tickers += self._kalshi_client.get_active_tickers_for_series(
+                active_tickers += self._kalshi_client.get_active_tickers_for_event(
                     ticker_mapper.FED_EVENT_TICKER
                 )
         return active_tickers
