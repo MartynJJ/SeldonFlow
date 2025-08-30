@@ -17,6 +17,11 @@ def main():
     while True:
         try:
             enable_platform()
+
+        except KeyboardInterrupt as key:
+            print("Killing from keyboard interupt")
+            raise
+
         except Exception as e:
             print(f"Error in platform, pausing for 1 min and restarting {e}")
             time.sleep(60)
