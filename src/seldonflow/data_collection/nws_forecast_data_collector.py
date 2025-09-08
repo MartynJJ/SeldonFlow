@@ -98,7 +98,7 @@ class NwsForecastCollector(LoggingMixin, data_collector.DataCollector):
             for location in self._stations:
                 self.pull_and_save_forecast(nyc_hour, location)
 
-    def pull_and_save_forecast(self, hour: int, location: ticker_mapper.TempLocation):
+    def pull_and_save_forecast(self, hour: int, location: ticker_mapper.TempLocation) -> None:
         self.logger.info(
             f"Pulling NWS Forecast for {location} - {Time(hour=hour).strftime('%H:%M')}"
         )
@@ -130,6 +130,10 @@ class NwsForecastCollector(LoggingMixin, data_collector.DataCollector):
                 hour=hour,
                 date=self._today,
             )
+            if(Path(filepath).is_file()):
+                self.logger.error(f"NWS Forecast Not Saved - file already exists: {filepath}")
+                return 
+            
             df.to_csv(
                 filepath,
                 index=False,
