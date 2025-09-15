@@ -3,6 +3,7 @@ from seldonflow.util import custom_types
 from seldonflow.data_collection.metar_data_collector import MetarCollector
 from seldonflow.data_collection.nws_forecast_data_collector import NwsForecastCollector
 from seldonflow.data_collection.nws_daily_summary import DailySummaryCollector
+from seldonflow.data_collection.intraday_nws_data_collector import IntradayNwsCollector
 from seldonflow.data_collection.data_collector import DataCollector
 from seldonflow.data_collection.kalshi_order_book_collector import (
     KalshiOrderBookCollector,
@@ -26,6 +27,7 @@ class DataManager(LoggingMixin):
             "MetarData": MetarCollector(self._env),
             "NwsForecast": NwsForecastCollector(self._env),
             "NWSDailySummary": DailySummaryCollector(env=self._env),
+            "IntradayNWS": IntradayNwsCollector(env=self._env),
         }
         self._kalshi_api = kalshi_api
         self.load_kalshi_orderbook_collector()

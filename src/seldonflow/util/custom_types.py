@@ -5,6 +5,7 @@ import pytz
 from datetime import datetime
 
 TimeStamp = NewType("TimeStamp", float)
+Minutes = NewType("Minutes", int)
 Seconds = NewType("Seconds", int)
 TempC = NewType("TempC", float)
 TempF = NewType("TempF", float)

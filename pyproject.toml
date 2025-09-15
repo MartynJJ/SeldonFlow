@@ -10,11 +10,12 @@ packages = [{include = "seldonflow", from = "src"}]
 python = "^3.10"
 kalshi-python = "^2.0.0"  # Kalshi SDK
 kalshi-python-unofficial = "^0.0.1"
-pyyaml = "^6.0"           
-apscheduler = "^3.10"     
-pandas = "^2.2"           
-pytest = "^8.3"           
-python-dotenv = "^1.0" 
+pyyaml = "^6.0"
+apscheduler = "^3.10"
+pandas = "^2.2"
+pytest = "^8.3"
+python-dotenv = "^1.0"
+selenium = "^4.35.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.8"  # Add Black as a dev dependency
