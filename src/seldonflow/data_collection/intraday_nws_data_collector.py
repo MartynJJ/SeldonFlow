@@ -54,7 +54,7 @@ class IntradayNwsCollector(LoggingMixin, data_collector.DataCollector):
                     intraday_data = self.scrape_data(code)
                     self.save_data(intraday_data)
                 except Exception as e:
-                    self.logger.error(f"Error scraping data for {code}: {e}")s
+                    self.logger.error(f"Error scraping data for {code}: {e}")
         self._tick_manager.align_to_time_point(
             current_time,
             [
