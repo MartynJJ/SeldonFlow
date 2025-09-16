@@ -6,7 +6,10 @@ from seldonflow.util import ticker_mapper
 from seldonflow.util import custom_methods, custom_types
 from seldonflow.data_collection import kalshi_order_book_utils
 from seldonflow.util import tick_manager, ticker_mapper, config
-
+from seldonflow.data_collection.intraday_nws_util import (
+    DEV_INTRADAY_FILE_DIR,
+    INTRADAY_FILE_DIR,
+)
 
 import datetime
 from typing import Optional, List, Dict
@@ -22,10 +25,6 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.remote.webelement import WebElement
 import time
 import re
-
-
-INTRADAY_FILE_DIR = Path("src/seldonflow/data/shared/weather/intraday_nws/")
-DEV_INTRADAY_FILE_DIR = Path("src/seldonflow/data/shared/DEV/weather/intraday_nws/")
 
 
 class IntradayNwsCollector(LoggingMixin, data_collector.DataCollector):

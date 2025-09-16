@@ -25,6 +25,7 @@ from seldonflow.util.ticker_mapper import (
 from seldonflow.fees import kalshi_fees
 from seldonflow.data_collection import metar_data_collector
 from seldonflow.data_collection.data_manager import DataCollector, DataManager
+from seldonflow.data_collection import intraday_nws_util
 
 from datetime import date, time, datetime
 from typing import List, Dict, Any, Tuple, Optional
@@ -126,23 +127,40 @@ class TROS(iStrategy):
         )
         return current_temp_opt if current_temp_opt else ABSOLUTE_ZERO
 
+    def get_intraday_nws_max_temperature(self, time_stamp: TimeStamp) -> Temp:
+        file_path = intraday_nws_util.get_latest_file()
+        df = pd.read_csv(file_path)
+        max_temps = intraday_nws_util.get_max_daily_temp(df, time_stamp)
+        if max_temps.get("6_hr", ABSOLUTE_ZERO) > max_temps.get(
+            "Snapshot", ABSOLUTE_ZERO
+        ):
+            self.logger.info("6hr max greated than snapshot, info trading opp")
+        return max(max_temps.values())
+
     def get_max_observed_temperature(self, time_stamp: TimeStamp) -> Temp:
-        station = metar_data_collector.TEMP_LOCATION_TO_STATION.get(self._location, "")
-        if len(station):
-            file_date = datetime.fromtimestamp(time_stamp)
-            file_name = metar_data_collector.get_data_filename(
-                station=station, date=file_date
-            )
-            try:
-                df = pd.read_csv(file_name)
-            except FileNotFoundError as file_not_found_e:
-                self.logger.warning(f"Missing MetarData {file_not_found_e} ")
-                return ABSOLUTE_ZERO
-            max_temp = math.floor(df["TempF"].max())
-            current_temp = math.floor(self.get_current_temperature().as_fahrenheit())
-            actual_max = max(max_temp, current_temp)
-            return Temp.from_f(TempF(actual_max))
-        else:
+        # station = metar_data_collector.TEMP_LOCATION_TO_STATION.get(self._location, "")
+        # if len(station):
+        #     file_date = datetime.fromtimestamp(time_stamp)
+        #     file_name = metar_data_collector.get_data_filename(
+        #         station=station, date=file_date
+        #     )
+        #     try:
+        #         df = pd.read_csv(file_name)
+        #     except FileNotFoundError as file_not_found_e:
+        #         self.logger.warning(f"Missing MetarData {file_not_found_e} ")
+        #         return ABSOLUTE_ZERO
+        #     max_temp = math.floor(df["TempF"].max())
+        #     current_temp = math.floor(self.get_current_temperature().as_fahrenheit())
+        #     actual_max = max(max_temp, current_temp)
+        #     return Temp.from_f(TempF(actual_max))
+        # else:
+        #     return ABSOLUTE_ZERO
+        try:
+            max_temp = self.get_intraday_nws_max_temperature(time_stamp=time_stamp)
+            self.logger.info(f"Max Intraday NWS temp: {max_temp}")
+            return max_temp
+        except Exception as e:
+            self.logger.error("Error getting max intraday temp: {e}")
             return ABSOLUTE_ZERO
 
     def set_max_observed_temperature(self, time_stamp: TimeStamp) -> None:
