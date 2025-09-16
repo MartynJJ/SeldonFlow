@@ -1,3 +1,4 @@
+import platform
 from seldonflow.platform.i_platform import iPlatform
 from seldonflow.strategy.i_strategy import (
     iStrategy,
@@ -59,6 +60,8 @@ class StrategyManager(LoggingMixin):
     def on_tick(self, current_time: custom_types.TimeStamp):
         for _, strategy in self._strategies.items():
             action_request = strategy.on_tick(current_time)
+            if action_request != None:
+                self._platform.receive_action_request(action_request=action_request)
 
 
 def main():

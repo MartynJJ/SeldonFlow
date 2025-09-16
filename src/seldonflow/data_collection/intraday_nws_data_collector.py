@@ -25,6 +25,7 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.remote.webelement import WebElement
 import time
 import re
+import asyncio
 
 
 class IntradayNwsCollector(LoggingMixin, data_collector.DataCollector):
@@ -50,7 +51,7 @@ class IntradayNwsCollector(LoggingMixin, data_collector.DataCollector):
             for code in self.codes:
                 self.logger.info(f"Scraping Intraday data for {code}")
                 try:
-                    intraday_data = self.scrape_data(code)
+                    intraday_data = await self.scrape_data(code)
                     self.save_data(intraday_data)
                 except Exception as e:
                     self.logger.error(f"Error scraping data for {code}: {e}")
@@ -69,7 +70,7 @@ class IntradayNwsCollector(LoggingMixin, data_collector.DataCollector):
     def collect_station_data(self, station: str) -> Optional[custom_types.Temp]:
         return None
 
-    def get_temp_table(self, site_code: str) -> Optional[WebElement]:
+    async def get_temp_table(self, site_code: str) -> Optional[WebElement]:
 
         options = Options()
         options.add_argument("--headless")
@@ -152,8 +153,8 @@ class IntradayNwsCollector(LoggingMixin, data_collector.DataCollector):
         }
         return header_to_col
 
-    def scrape_data(self, site_code: str) -> pd.DataFrame:
-        table = self.get_temp_table(site_code)
+    async def scrape_data(self, site_code: str) -> pd.DataFrame:
+        table = await self.get_temp_table(site_code)
         if table == None:
             return pd.DataFrame()
         assert table != None
@@ -200,7 +201,7 @@ class IntradayNwsCollector(LoggingMixin, data_collector.DataCollector):
 def main():
     env = Environment.DEVELOPMENT
     collector = IntradayNwsCollector(env=env)
-    df = collector.scrape_data("knyc")
+    df = asyncio.run(collector.scrape_data("knyc"))
     print(df.iloc[0, 0].strftime("%Y%m%d_%H%M%S"))
 
 

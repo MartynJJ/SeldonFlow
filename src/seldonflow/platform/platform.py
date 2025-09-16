@@ -65,6 +65,7 @@ class LivePlatform(iPlatform):
 
     def enable(self):
         self._strategy_manager.load_strategies()
+        self._execution_manager.enable()
         self._enabled = True
         try:
             asyncio.run(self.run())
