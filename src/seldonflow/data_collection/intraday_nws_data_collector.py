@@ -37,7 +37,7 @@ class IntradayNwsCollector(LoggingMixin, data_collector.DataCollector):
             if self._env == Environment.PRODUCTION
             else DEV_INTRADAY_FILE_DIR
         )
-        self._tick_manager = tick_manager.TickManager(tick_manager.ONE_MINUTE)
+        self._tick_manager = tick_manager.TickManager(tick_manager.FIVE_MINUTES)
         self._enabled = True
         self.logger.info(
             f"Intraday NWS Collector Loaded: {self._env} Tick Interval: {self._tick_manager._tick_interval}"
@@ -63,7 +63,22 @@ class IntradayNwsCollector(LoggingMixin, data_collector.DataCollector):
     def set_webdriver(self):
         self._driver = self.get_webdriver()
 
+    def check_for_busy_strat_time(self, current_time: custom_types.TimeStamp) -> bool:
+        current_datetime = custom_methods.time_stamp_to_NYC(current_time)
+        current_hour = current_datetime.hour
+        if current_hour != 13:
+            return False
+        else:
+            current_minute = current_datetime.minute
+            if (current_minute > 49) and (current_minute < 58):
+                return True
+            else:
+                return False
+
     async def on_tick(self, current_time: custom_types.TimeStamp):
+        is_strat_busy = self.check_for_busy_strat_time(current_time)
+        if is_strat_busy:
+            return None
         if self._tick_manager.ready_with_auto_update(current_time=current_time):
             for code in self.codes:
                 self.logger.info(f"Scraping Intraday data for {code}")

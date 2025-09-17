@@ -4,6 +4,7 @@ import pytz
 from typing import Optional
 import pandas as pd
 
+
 _COMPASS_TO_DEGREES = {
     "N": 0.0,
     "NNE": 22.5,

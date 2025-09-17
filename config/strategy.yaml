@@ -13,3 +13,18 @@ temperature_rest_order_sweep1:
     - name: "Risk"
       risk_currency: "USD"
       max_value_at_risk: 50.0
+max_temp_nyc:
+  strategy_type: MaxTempNYC
+  live: true
+  desc: "Make money on NYC Max temp"
+  tick_interval: 30
+  parameters:
+    - name: "MaxSize"
+      type: "dollar"
+      value: 40
+      FromSymbol: "USD"
+    - name: "Market"
+      location: "NYC"
+    - name: "Risk"
+      risk_currency: "USD"
+      max_value_at_risk: 50.0

@@ -2,7 +2,21 @@
 from enum import Enum
 from typing import NewType
 import pytz
-from datetime import datetime
+from datetime import datetime, time
+from dataclasses import dataclass
+
+
+@dataclass
+class TimeWindow:
+    start_time: time
+    end_time: time
+
+
+def get_location_from_params(params):
+    return TempLocation.from_string(
+        params.get_params().get("Market", {}).get("location", "")
+    )
+
 
 TimeStamp = NewType("TimeStamp", float)
 Minutes = NewType("Minutes", int)

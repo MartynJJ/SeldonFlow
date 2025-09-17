@@ -1,4 +1,5 @@
 import platform
+from seldonflow import strategy
 from seldonflow.platform.i_platform import iPlatform
 from seldonflow.strategy.i_strategy import (
     iStrategy,
@@ -9,6 +10,7 @@ from seldonflow.strategy.i_strategy import (
 from seldonflow.util.config import Config, ConfigType
 from seldonflow.strategy.strategy_types import StrategyType
 from seldonflow.strategy.temperature_resting_order_sweep import TROS
+from seldonflow.strategy.temperature_strat_NYC import MaxTempNYCStrategy
 from seldonflow.util.logger import LoggingMixin
 from datetime import date
 from seldonflow.util import custom_types
@@ -46,6 +48,13 @@ class StrategyManager(LoggingMixin):
     ) -> iStrategy:
         if strategy_param.strategy_type() == StrategyType.TemperatureRestingOrderSweep:
             return TROS(
+                strategy_param,
+                platform.api_client(),
+                platform.today(),
+                platform.data_manager(),
+            )
+        if strategy_param.strategy_type() == StrategyType.MaxTempNYC:
+            return MaxTempNYCStrategy(
                 strategy_param,
                 platform.api_client(),
                 platform.today(),
