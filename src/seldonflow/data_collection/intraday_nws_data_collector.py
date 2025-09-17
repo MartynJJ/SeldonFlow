@@ -43,8 +43,25 @@ class IntradayNwsCollector(LoggingMixin, data_collector.DataCollector):
             f"Intraday NWS Collector Loaded: {self._env} Tick Interval: {self._tick_manager._tick_interval}"
         )
         self.codes = ["knyc"]
+        self._options = self.get_options()
+        self._driver = self.get_webdriver()
 
         # self.scrape_data("knyc")
+
+    def get_options(self):
+        options = Options()
+        options.add_argument("--headless")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--window-size=800,600")
+        return options
+
+    def get_webdriver(self):
+        return webdriver.Chrome(options=self._options)
+
+    def set_webdriver(self):
+        self._driver = self.get_webdriver()
 
     async def on_tick(self, current_time: custom_types.TimeStamp):
         if self._tick_manager.ready_with_auto_update(current_time=current_time):
@@ -55,45 +72,36 @@ class IntradayNwsCollector(LoggingMixin, data_collector.DataCollector):
                     self.save_data(intraday_data)
                 except Exception as e:
                     self.logger.error(f"Error scraping data for {code}: {e}")
-        self._tick_manager.align_to_time_point(
-            current_time,
-            [
-                custom_types.Minutes(1),
-                custom_types.Minutes(11),
-                custom_types.Minutes(21),
-                custom_types.Minutes(31),
-                custom_types.Minutes(41),
-                custom_types.Minutes(51),
-            ],
-        )
 
     def collect_station_data(self, station: str) -> Optional[custom_types.Temp]:
         return None
 
     async def get_temp_table(self, site_code: str) -> Optional[WebElement]:
 
-        options = Options()
-        options.add_argument("--headless")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--window-size=800,600")
+        # options = Options()
+        # options.add_argument("--headless")
+        # options.add_argument("--no-sandbox")
+        # options.add_argument("--disable-dev-shm-usage")
+        # options.add_argument("--disable-gpu")
+        # options.add_argument("--window-size=800,600")
         MAX_ATTEMPTS = 3
         table: Optional[WebElement] = None
-        driver = webdriver.Chrome(options=options)
-        url = f"https://www.weather.gov/wrh/timeseries?site={site_code}"
+        # driver = webdriver.Chrome(options=options)
+        self.set_webdriver()
+        url = f"https://www.weather.gov/wrh/timeseries?site={site_code}&hours=25"
         self.logger.info(f"Loading: {url}")
-        driver.get(url)
+        self._driver.get(url)
         for attempt in range(MAX_ATTEMPTS):
             self.logger.info(
                 f"Checking for table. Attenpt {attempt+1} / {MAX_ATTEMPTS}"
             )
             try:
-                WebDriverWait(driver, 10).until(
+                WebDriverWait(self._driver, 10).until(
                     lambda d: len(d.find_elements(By.CSS_SELECTOR, "#OBS_DATA tr")) > 5
                 )
-                table = driver.find_element(By.ID, "OBS_DATA")
+                table = self._driver.find_element(By.ID, "OBS_DATA")
                 self.logger.debug("Found table with ID 'OBS_DATA'")
+
                 return table
             except:
                 self.logger.info("Could not find table with ID 'OBS_DATA', retrying")
@@ -183,6 +191,7 @@ class IntradayNwsCollector(LoggingMixin, data_collector.DataCollector):
         data["datetime"] = data["datetime"].apply(
             lambda x: self.parse_nws_datetime_with_inferred_year(x, current_year)
         )
+        self._driver.quit()
         return pd.DataFrame(data)
 
     @staticmethod

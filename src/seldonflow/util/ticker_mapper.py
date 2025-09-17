@@ -14,6 +14,9 @@ class TempLocation(Enum):
     JFK = "JFK"
     EWR = "EWR"
     LGA = "LGA"
+    LA = "LA"
+    MIAMI = "MIAMI"
+    PHILI = "PHILI"
 
     @staticmethod
     def from_string(location_str: str):
@@ -33,6 +36,9 @@ KALSHI_MAX_TEMP_TICKER_TO_LOCATION = {
 
 KALSHI_MAX_TEMP_LOCATION_TO_TICKER = {
     TempLocation.NYC: "KXHIGHNY",
+    TempLocation.LA: "KXHIGHLAX",
+    TempLocation.MIAMI: "KXHIGHMIA",
+    TempLocation.PHILI: "KXHIGHPHIL",
     TempLocation.INVALID: "",
 }
 

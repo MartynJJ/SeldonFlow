@@ -1,3 +1,4 @@
+from os import kill
 from seldonflow.data_collection import data_collector
 from seldonflow.util.logger import LoggingMixin
 from seldonflow.util.env import Environment
@@ -20,43 +21,48 @@ DEV_ORDER_BOOK_FILE_DIR = Path(
 
 
 class KalshiOrderBookCollector(LoggingMixin, data_collector.DataCollector):
+    _temperature_locations: List[ticker_mapper.TempLocation] = [
+        ticker_mapper.TempLocation.NYC,
+        ticker_mapper.TempLocation.MIAMI,
+        ticker_mapper.TempLocation.PHILI,
+        ticker_mapper.TempLocation.LA,
+    ]
+
     def __init__(
         self, kalshi_client: KalshiClient, env: Environment = Environment.PRODUCTION
     ):
         super().__init__()
         self._env = env
         self._kalshi_client = kalshi_client
-        self._base_ticker = self.get_base_tickers()
+        self._base_tickers = self.get_base_tickers()
         self._save_dir = (
             ORDER_BOOK_FILE_DIR
             if self._env == Environment.PRODUCTION
             else DEV_ORDER_BOOK_FILE_DIR
         )
+
         self._tick_manager = tick_manager.TickManager(tick_manager.ONE_MINUTE)
         self._enabled = True
         self.logger.info(
             f"Kalshi Orderbook Collector Loaded: {self._env} Tick Interval: {self._tick_manager._tick_interval}"
         )
 
-    def get_base_tickers(self):
-        temp_locations = [ticker_mapper.TempLocation.NYC]
-        temp_tickers = [
-            ticker_mapper.KALSHI_MAX_TEMP_LOCATION_TO_TICKER.get(location)
-            for location in temp_locations
-        ]
-        return temp_tickers
+    def get_base_tickers(self) -> List[str]:
+        tickers = []
+        tickers.append(ticker_mapper.FED_EVENT_TICKER)
+        for location in self._temperature_locations:
+            ticker = ticker_mapper.KALSHI_MAX_TEMP_LOCATION_TO_TICKER.get(location)
+            if ticker != None:
+                tickers.append(ticker)
+        self.logger.error(tickers)
+        return tickers
 
     def get_active_tickers(self) -> List[str]:
         active_tickers = []
-        tomorrows_tickers = []
-        for base_ticker in self._base_ticker:
-            if base_ticker:
-                active_tickers += self._kalshi_client.get_active_tickers_for_event(
-                    "KXHIGHNY".upper()
-                )
-                active_tickers += self._kalshi_client.get_active_tickers_for_event(
-                    ticker_mapper.FED_EVENT_TICKER
-                )
+        for base_ticker in self._base_tickers:
+            active_tickers += self._kalshi_client.get_active_tickers_for_event(
+                base_ticker.upper()
+            )
         return active_tickers
 
     def get_ticker_orderbook_df(
