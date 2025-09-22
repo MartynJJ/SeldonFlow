@@ -17,7 +17,7 @@ import asyncio
 
 START_TIME_HOUR = 13
 END_TIME_HOUR = 14
-BUY_PEAK_UNCERTAINTY = 0.25
+BUY_PEAK_UNCERTAINTY = 0.3
 
 
 class MaxTempNYCStrategy(i_strategy.iStrategy):
@@ -104,15 +104,16 @@ class MaxTempNYCStrategy(i_strategy.iStrategy):
         if self._tick_manager.ready_with_auto_update(current_time=current_time):
             if not self._loaded:
                 self.initial_load()
-                execution_list = self.check_for_6hr_max(self._current_year)
-                executions = []
-                for possible_execution in execution_list:
-                    if possible_execution.get("net_winnings", -1) > 0:
-                        try:
-                            executions.append(possible_execution["exeuction_order"])
-                        except KeyError as key_error:
-                            print(f"Key Error: {key_error}")
-                return i_strategy.ActionRequest([], executions=executions)
+
+            execution_list = self.check_for_6hr_max(self._current_year)
+            executions = []
+            for possible_execution in execution_list:
+                if possible_execution.get("i", -1) > 0:
+                    try:
+                        executions.append(possible_execution["exeuction_order"])
+                    except KeyError as key_error:
+                        print(f"Key Error: {key_error}")
+            return i_strategy.ActionRequest([], executions=executions)
 
     def check_for_6hr_max(self, current_year: int) -> List[Dict[str, Any]]:
         orders = []

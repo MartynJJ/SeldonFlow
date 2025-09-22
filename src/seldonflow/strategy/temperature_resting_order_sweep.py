@@ -134,7 +134,7 @@ class TROS(iStrategy):
         if max_temps.get("6_hr", ABSOLUTE_ZERO) > max_temps.get(
             "Snapshot", ABSOLUTE_ZERO
         ):
-            self.logger.info("6hr max greated than snapshot, info trading opp")
+            self.logger.info("6hr max greater than snapshot, info trading opp")
         return max(max_temps.values())
 
     def get_max_observed_temperature(self, time_stamp: TimeStamp) -> Temp:
