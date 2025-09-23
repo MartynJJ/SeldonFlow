@@ -75,7 +75,7 @@ class LivePlatform(iPlatform):
         except Exception as e:
             self.logger.error(f"Error: {e}")
             self._enabled = False
-            raise
+            raise RuntimeError(e)
 
     def receive_action_request(self, action_request: ActionRequest):
         self.logger.info(
