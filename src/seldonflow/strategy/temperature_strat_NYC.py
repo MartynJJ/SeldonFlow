@@ -124,12 +124,12 @@ class MaxTempNYCStrategy(i_strategy.iStrategy):
             if six_hour_max_temps == None:
                 return []
             six_max_hour_temp = six_hour_max_temps.six_hour_max_temp
-            orders.append(self.generate_execution_list_below_temp(six_max_hour_temp))
+            orders += self.generate_execution_list_below_temp(six_max_hour_temp)
             if six_max_hour_temp > six_hour_max_temps.print_temp:
                 self.logger.warning(
                     f"Entering BUY THE PEAK strat: 6 hour max = {six_max_hour_temp}, recent print = {six_hour_max_temps.print_temp}"
                 )
-                orders.append(self.buy_the_peak(six_max_hour_temp))
+                orders += self.buy_the_peak(six_max_hour_temp)
         except Exception as e:
             self.logger.error(f"Error Caught in check_for_6hr_max: {e}")
         return orders
